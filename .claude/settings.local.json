@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm --version)",
+      "Bash(git --version)",
+      "Read(//d/Projects/**)",
+      "Bash(npx --yes create-next-app@latest fisool --typescript --tailwind --app --eslint --src-dir --import-alias \"@/*\" --use-npm --no-turbopack --yes)"
+    ]
+  }
+}
