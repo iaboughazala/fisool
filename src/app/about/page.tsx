@@ -1,14 +1,14 @@
 export const metadata = {
-  title: "عن فيصول",
-  description: "تعرف على فيصول، دليل مدارس الرياض البسيط والشامل.",
+  title: "عن فصول",
+  description: "تعرف على فصول، دليل مدارس الرياض البسيط والشامل.",
 };
 
 export default function AboutPage() {
   return (
     <article className="max-w-3xl mx-auto px-4 py-12 leading-loose">
-      <h1 className="text-3xl font-extrabold text-slate-900 mb-6">عن فيصول</h1>
+      <h1 className="text-3xl font-extrabold text-slate-900 mb-6">عن فصول</h1>
       <p className="text-slate-700 mb-4">
-        فيصول هو دليل بسيط ومركّز على مدارس مدينة الرياض، صُنع لمساعدة أولياء
+        فصول هو دليل بسيط ومركّز على مدارس مدينة الرياض، صُنع لمساعدة أولياء
         الأمور في اتخاذ قرار اختيار المدرسة بثقة وسرعة.
       </p>
       <h2 className="text-xl font-bold text-slate-900 mt-8 mb-3">

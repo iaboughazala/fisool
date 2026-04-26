@@ -1,7 +1,7 @@
 import Link from "next/link";
 import SearchBar from "@/components/SearchBar";
 import SchoolCard from "@/components/SchoolCard";
-import { schools, NEIGHBORHOODS } from "@/lib/schools";
+import { schools, NEIGHBORHOODS, FEATURED_NEIGHBORHOODS } from "@/lib/schools";
 
 export default function Home() {
   const featured = [...schools]
@@ -23,7 +23,7 @@ export default function Home() {
             <SearchBar size="lg" />
             <div className="mt-6 flex flex-wrap gap-2 text-sm">
               <span className="text-teal-100">أحياء سريعة:</span>
-              {NEIGHBORHOODS.map((n) => (
+              {FEATURED_NEIGHBORHOODS.map((n) => (
                 <Link
                   key={n}
                   href={`/search?neighborhood=${encodeURIComponent(n)}`}
@@ -73,7 +73,7 @@ export default function Home() {
       <section className="bg-white border-y border-slate-200">
         <div className="max-w-6xl mx-auto px-4 py-14">
           <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 text-center mb-10">
-            ليه فيصول؟
+            ليه فصول؟
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
             <Feature

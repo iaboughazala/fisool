@@ -9,6 +9,12 @@ export type Curriculum =
 export type Gender = "بنين" | "بنات" | "مختلط";
 export type Stage = "روضة" | "ابتدائي" | "متوسط" | "ثانوي";
 
+export interface GradeFee {
+  stage: Stage;
+  grade: string;
+  fee: number;
+}
+
 export interface School {
   id: string;
   slug: string;

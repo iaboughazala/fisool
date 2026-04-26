@@ -1,7 +1,15 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
-import { getSchoolBySlug, getAllSlugs, formatFees, schools } from "@/lib/schools";
+import {
+  getSchoolBySlug,
+  getAllSlugs,
+  formatFees,
+  formatFee,
+  generateGradeFees,
+  schools,
+} from "@/lib/schools";
+import type { Stage } from "@/lib/types";
 import SchoolCard from "@/components/SchoolCard";
 
 export function generateStaticParams() {
@@ -105,6 +113,23 @@ export default async function SchoolPage({
         )}
       </div>
 
+      {/* Per-grade fees */}
+      <section className="bg-white rounded-2xl border border-slate-200 p-6 mb-6">
+        <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+          <h2 className="font-bold text-lg text-slate-900">
+            الرسوم الدراسية لكل صف
+          </h2>
+          <span className="text-xs text-slate-500">
+            الرسوم سنوية تقريبية بالريال السعودي
+          </span>
+        </div>
+        <FeesTable schoolId={s.id} stages={s.stages} feesMin={s.feesMin} feesMax={s.feesMax} />
+        <p className="text-xs text-slate-500 mt-3 leading-relaxed">
+          * الأرقام تقديرية بناءً على نطاق المدرسة العام، وقد تختلف الرسوم الفعلية
+          مع رسوم التسجيل والكتب والنقل. يُنصح بالتواصل مع المدرسة لتأكيد الأسعار.
+        </p>
+      </section>
+
       {/* Features */}
       <section className="bg-white rounded-2xl border border-slate-200 p-6 mb-6">
         <h2 className="font-bold text-lg text-slate-900 mb-4">المرافق والمميزات</h2>
@@ -205,6 +230,75 @@ function InfoCard({ label, value }: { label: string; value: string }) {
     <div className="bg-white rounded-2xl border border-slate-200 p-4">
       <div className="text-sm text-slate-500 mb-1">{label}</div>
       <div className="font-bold text-slate-900 text-lg">{value}</div>
+    </div>
+  );
+}
+
+const STAGE_LABELS: Record<Stage, { label: string; color: string }> = {
+  روضة: { label: "مرحلة الروضة", color: "bg-amber-50 text-amber-800" },
+  ابتدائي: { label: "المرحلة الابتدائية", color: "bg-teal-50 text-teal-800" },
+  متوسط: { label: "المرحلة المتوسطة", color: "bg-blue-50 text-blue-800" },
+  ثانوي: { label: "المرحلة الثانوية", color: "bg-indigo-50 text-indigo-800" },
+};
+
+function FeesTable({
+  schoolId,
+  stages,
+  feesMin,
+  feesMax,
+}: {
+  schoolId: string;
+  stages: Stage[];
+  feesMin: number;
+  feesMax: number;
+}) {
+  const fees = generateGradeFees(stages, feesMin, feesMax);
+  if (fees.length === 0) return null;
+
+  // group by stage in original order
+  const grouped: { stage: Stage; rows: typeof fees }[] = [];
+  for (const f of fees) {
+    const existing = grouped.find((g) => g.stage === f.stage);
+    if (existing) existing.rows.push(f);
+    else grouped.push({ stage: f.stage, rows: [f] });
+  }
+
+  return (
+    <div className="space-y-5">
+      {grouped.map(({ stage, rows }) => {
+        const meta = STAGE_LABELS[stage];
+        const stageMin = Math.min(...rows.map((r) => r.fee));
+        const stageMax = Math.max(...rows.map((r) => r.fee));
+        return (
+          <div key={`${schoolId}-${stage}`} className="border border-slate-200 rounded-xl overflow-hidden">
+            <div
+              className={`flex items-center justify-between px-4 py-2.5 ${meta.color} font-bold text-sm`}
+            >
+              <span>{meta.label}</span>
+              <span className="font-normal text-xs">
+                {stageMin === stageMax
+                  ? formatFee(stageMin)
+                  : `${formatFee(stageMin)} - ${formatFee(stageMax)}`}
+              </span>
+            </div>
+            <table className="w-full text-sm">
+              <tbody>
+                {rows.map((row, i) => (
+                  <tr
+                    key={row.grade}
+                    className={i % 2 === 0 ? "bg-white" : "bg-slate-50"}
+                  >
+                    <td className="px-4 py-2 text-slate-700">{row.grade}</td>
+                    <td className="px-4 py-2 text-left font-semibold text-slate-900 tabular-nums">
+                      {formatFee(row.fee)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        );
+      })}
     </div>
   );
 }

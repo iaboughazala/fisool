@@ -8,7 +8,7 @@ export default function Header() {
           <span className="inline-flex w-9 h-9 rounded-xl bg-teal-600 text-white items-center justify-center font-bold text-lg">
             ف
           </span>
-          <span className="text-xl font-bold text-slate-900">فيصول</span>
+          <span className="text-xl font-bold text-slate-900">فصول</span>
           <span className="hidden sm:inline text-xs text-slate-500 mr-1">
             دليل مدارس الرياض
           </span>
