@@ -11,17 +11,11 @@ export interface FeesSummary {
 
 export type FeeStage = "روضة" | "ابتدائي" | "متوسط" | "ثانوي" | "أخرى";
 
-/** A real per-grade × per-track × per-gender fee row from the source DB. */
 export interface GradeFee {
-  /** Source-language track, e.g. "General", "Global American". */
   track: string;
-  /** Localised track label. */
   trackAr: string;
-  /** Source-language grade, e.g. "GRADE 1", "KG2". */
   grade: string;
-  /** Localised grade label, e.g. "الأول الابتدائي". */
   gradeAr: string;
-  /** Pedagogical stage, used for grouping in UI. */
   stage: FeeStage;
   gender: "Boys" | "Girls";
   genderAr: "بنين" | "بنات";
@@ -31,6 +25,16 @@ export interface GradeFee {
 export interface SchoolPhoto {
   originalUrl: string;
 }
+
+/** The five canonical Saudi school stages, in order. */
+export const STAGE_NAMES = [
+  "حضانة",
+  "روضة",
+  "ابتدائي",
+  "متوسط",
+  "ثانوي",
+] as const;
+export type StageName = (typeof STAGE_NAMES)[number];
 
 export interface School {
   id: number;
@@ -42,24 +46,24 @@ export interface School {
   cityEn?: string;
   district?: string;
   districtEn?: string;
-  /** Coordinates may be missing — those schools don't appear on the map. */
   lat?: number;
   lng?: number;
   type?: string;
-  curriculum?: string;
+  /** Curriculum tokens (already split, normalized, deduped). */
+  curriculum?: string[];
   gender?: string;
-  gradeLevels?: string;
+  /** Canonical Saudi school stages (subset of STAGE_NAMES). */
+  gradeLevels?: StageName[];
+  /** Original unparsed grade-levels string from the source — kept for debugging. */
+  gradeLevelsRaw?: string;
   foundedYear?: number;
   about?: string;
   rating?: number;
   reviewCount?: number;
   startingFee?: number;
-  /** Aggregate of all collected fee rows. */
   fees?: FeesSummary;
-  /** Full per-grade × per-track × per-gender fee schedule. */
   gradeFees?: GradeFee[];
   photo?: SchoolPhoto;
   subRatings?: Record<string, number>;
-  /** Original source page URL (yaschools.com), shown as attribution. */
   sourceUrl?: string;
 }

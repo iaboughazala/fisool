@@ -6,11 +6,9 @@ import {
   getSchoolBySlug,
   formatSAR,
   formatFeeRange,
-  curriculumTokens,
-  gradeLevelTokens,
   schools,
 } from "@/lib/schools";
-import type { GradeFee, School } from "@/lib/types";
+import type { School } from "@/lib/types";
 import SchoolCard from "@/components/SchoolCard";
 
 export const dynamicParams = true;
@@ -65,8 +63,8 @@ export default async function SchoolPage({
     )
     .slice(0, 3);
 
-  const curricula = curriculumTokens(s);
-  const grades = gradeLevelTokens(s);
+  const curricula = s.curriculum ?? [];
+  const grades = s.gradeLevels ?? [];
   const hasFees = s.fees || s.startingFee !== undefined;
   const hasCoords = s.lat !== undefined && s.lng !== undefined;
   const shareUrl = `https://fisool.finalizat.com/schools/${s.slug}`;

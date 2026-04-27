@@ -4,7 +4,7 @@ import {
   CITIES,
   CURRICULA,
   GENDERS,
-  GRADE_LEVELS,
+  STAGES,
   TYPES,
 } from "@/lib/schools";
 import SchoolCard from "@/components/SchoolCard";
@@ -20,7 +20,7 @@ type SearchParams = {
   type?: string;
   curriculum?: string;
   gender?: string;
-  gradeLevel?: string;
+  stage?: string;
 };
 
 const PAGE_SIZE = 30;
@@ -88,11 +88,7 @@ export default async function SearchPage({
           <Select name="gender" value={sp.gender} options={GENDERS} />
         </Field>
         <Field label="المرحلة الدراسية">
-          <Select
-            name="gradeLevel"
-            value={sp.gradeLevel}
-            options={GRADE_LEVELS}
-          />
+          <Select name="stage" value={sp.stage} options={STAGES} />
         </Field>
         <div className="sm:col-span-2 lg:col-span-3 flex gap-2">
           <button

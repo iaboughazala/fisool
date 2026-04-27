@@ -1,10 +1,10 @@
 import Link from "next/link";
 import Image from "next/image";
 import type { School } from "@/lib/types";
-import { formatFeeRange, curriculumTokens } from "@/lib/schools";
+import { formatFeeRange } from "@/lib/schools";
 
 export default function SchoolCard({ school }: { school: School }) {
-  const tokens = curriculumTokens(school);
+  const tokens = school.curriculum ?? [];
   return (
     <Link
       href={`/schools/${school.slug}`}

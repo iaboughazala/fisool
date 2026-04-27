@@ -102,6 +102,13 @@ TYPE_FALLBACK_EN_TO_AR = {
     "National": "أهلية",
 }
 
+# "دولية" and "عالمية" are functionally identical labels for international
+# schools — just two different terms used by different operators.
+# We merge them to give parents a single coherent filter.
+TYPE_MERGES = {
+    "دولية": "عالمية",
+}
+
 GENDER_FALLBACK_EN_TO_AR = {
     "Boys and Girls": "بنين و بنات",
     "Boys": "بنين",
@@ -116,6 +123,78 @@ CURRICULUM_FIXES = {
     "الدبلوما الامريكية": "الدبلومة الأمريكية",
     "أهلي": "أهلي",  # keep as-is
 }
+
+# Saudi school stages — there are exactly 5. Every grade-level token in the
+# source must canonicalise to one of these (or to the special "جميع المراحل"
+# umbrella label, which we expand to the full list).
+STAGE_CANON = "حضانة"
+STAGE_KG = "روضة"
+STAGE_PRIMARY = "ابتدائي"
+STAGE_INTERMEDIATE = "متوسط"
+STAGE_SECONDARY = "ثانوي"
+ALL_STAGES = [STAGE_CANON, STAGE_KG, STAGE_PRIMARY, STAGE_INTERMEDIATE, STAGE_SECONDARY]
+
+# Map every spelling variant we've seen in the source to its canonical stage.
+STAGE_VARIANTS: dict[str, str] = {}
+for s in [
+    "حضانة", "حضانه", "الحضانة", "الحضانه",
+]:
+    STAGE_VARIANTS[s] = STAGE_CANON
+for s in [
+    "روضة", "روضه", "الروضة", "الروضه",
+]:
+    STAGE_VARIANTS[s] = STAGE_KG
+for s in [
+    "ابتدائي", "ابتدائى", "ابتدائية", "إبتدائي", "إبتدائية",
+    "الابتدائية", "الابتدائي", "الإبتدائية", "الإبتدائي",
+]:
+    STAGE_VARIANTS[s] = STAGE_PRIMARY
+for s in [
+    "متوسط", "متوسطة", "متوسطه", "المتوسط", "المتوسطة", "المتوسطه",
+]:
+    STAGE_VARIANTS[s] = STAGE_INTERMEDIATE
+for s in [
+    "ثانوي", "ثانوية", "ثانويه", "الثانوي", "الثانوية", "الثانويه",
+]:
+    STAGE_VARIANTS[s] = STAGE_SECONDARY
+
+
+def parse_stages(raw: str | None) -> list[str]:
+    """Parse the messy grade_levels_ar field into a clean list of canonical
+    stage names (in the standard Saudi order)."""
+    if not raw:
+        return []
+    raw = raw.strip()
+    if "جميع المراحل" in raw or raw.lower() in ("all grades", "all stages"):
+        return ALL_STAGES.copy()
+    # Handle English-only fallbacks
+    en_low = raw.lower()
+    en_stages = []
+    if "kindergarten" in en_low or "kg" in en_low or "nursery" in en_low:
+        en_stages.append(STAGE_KG)
+    if "elementry" in en_low or "elementary" in en_low or "primary" in en_low:
+        en_stages.append(STAGE_PRIMARY)
+    if "middle" in en_low or "intermediate" in en_low:
+        en_stages.append(STAGE_INTERMEDIATE)
+    if "secondary" in en_low or "high school" in en_low:
+        en_stages.append(STAGE_SECONDARY)
+    if en_stages:
+        return [s for s in ALL_STAGES if s in en_stages]
+    # Split by ',' or '،', or by ' و ' (with spaces — never just 'و' alone,
+    # which is the Arabic letter inside words like "روضة")
+    tokens = re.split(r"\s*[,،]\s*|\s+و\s+", raw)
+    out: list[str] = []
+    seen: set[str] = set()
+    for t in tokens:
+        t = t.strip()
+        if not t:
+            continue
+        canon = STAGE_VARIANTS.get(t)
+        if canon and canon not in seen:
+            seen.add(canon)
+            out.append(canon)
+    # Sort into canonical order regardless of input order
+    return [s for s in ALL_STAGES if s in seen]
 
 
 # ---------- Arabic normalisation utilities ----------
@@ -254,6 +333,8 @@ for r in con.execute("SELECT * FROM schools ORDER BY id"):
     type_ar = clean(r["school_type_ar"])
     type_en = clean(r["school_type"])
     typ = type_ar or TYPE_FALLBACK_EN_TO_AR.get(type_en or "", type_en)
+    if typ in TYPE_MERGES:
+        typ = TYPE_MERGES[typ]
 
     gender_ar = clean(r["gender_ar"])
     gender_en = clean(r["gender"])
@@ -341,7 +422,8 @@ for entry in raw_rows:
         if t not in seen:
             seen.add(t)
             tokens_clean.append(t)
-    curriculum = "، ".join(tokens_clean) if tokens_clean else None
+    curriculum = tokens_clean if tokens_clean else None
+    stages = parse_stages(clean(r["grade_levels_ar"]) or clean(r["grade_levels"]))
 
     # Per-grade fees
     raw_fees = fees_by_school.get(sid, [])
@@ -401,7 +483,8 @@ for entry in raw_rows:
         "type": typ,
         "curriculum": curriculum,
         "gender": gen,
-        "gradeLevels": clean(r["grade_levels_ar"]) or clean(r["grade_levels"]),
+        "gradeLevels": stages if stages else None,
+        "gradeLevelsRaw": clean(r["grade_levels_ar"]) or clean(r["grade_levels"]),
         "foundedYear": r["founded_year"],
         "about": clean(r["about_ar"]) or clean(r["about"]),
         "rating": r["overall_rating"],

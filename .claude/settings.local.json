@@ -52,7 +52,12 @@
       "Bash(awk '{print $5}')",
       "Bash(xargs -r -I {} taskkill //F //PID {})",
       "Bash(git -c user.email=islam.aboughazala@gmail.com -c 'user.name=Islam Aboughazala' commit -m 'Replace fake data with 1,824 real Saudi schools + rich data *)",
-      "Bash(git -c user.email=islam.aboughazala@gmail.com -c 'user.name=Islam Aboughazala' commit -m 'Fix data quality: per-grade fees, normalized facets, logo layout, social *)"
+      "Bash(git -c user.email=islam.aboughazala@gmail.com -c 'user.name=Islam Aboughazala' commit -m 'Fix data quality: per-grade fees, normalized facets, logo layout, social *)",
+      "Bash(curl -s 'https://fisool.finalizat.com/')",
+      "Bash(grep -oE '[٠-٩]{1,2}[٬,][٠-٩]{3}|١٬٨٣٨')",
+      "Bash(curl -s 'https://fisool.finalizat.com/schools/adwaa-al-hedaya-national-schools')",
+      "Bash(curl -s 'https://fisool.finalizat.com/search?city=%D8%AC%D8%AF%D8%A9')",
+      "Bash(git -c user.email=islam.aboughazala@gmail.com -c 'user.name=Islam Aboughazala' commit -m 'Merge دولية→عالمية, normalize stages to 5 canonical, arrays for curriculum/gradeLevels *)"
     ]
   }
 }
