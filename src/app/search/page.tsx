@@ -1,35 +1,58 @@
 import Link from "next/link";
 import {
   searchSchools,
-  NEIGHBORHOODS,
+  CITIES,
   CURRICULA,
   GENDERS,
-  STAGES,
+  GRADE_LEVELS,
   TYPES,
 } from "@/lib/schools";
 import SchoolCard from "@/components/SchoolCard";
 
 export const metadata = {
   title: "بحث المدارس",
-  description: "ابحث في مدارس الرياض بالحي، المنهج، المرحلة، والنوع.",
+  description: "ابحث في مدارس المملكة بالمدينة، المنهج، المرحلة، والنوع.",
 };
 
 type SearchParams = {
   q?: string;
-  neighborhood?: string;
+  city?: string;
   type?: string;
   curriculum?: string;
   gender?: string;
-  stage?: string;
+  gradeLevel?: string;
 };
+
+const PAGE_SIZE = 30;
 
 export default async function SearchPage({
   searchParams,
 }: {
-  searchParams: Promise<SearchParams>;
+  searchParams: Promise<SearchParams & { page?: string }>;
 }) {
   const sp = await searchParams;
-  const results = searchSchools(sp);
+  const allResults = searchSchools(sp);
+  // Sort by rating × popularity, fall back to name.
+  const sortedResults = [...allResults].sort((a, b) => {
+    const sa = (a.rating ?? 0) * Math.log((a.reviewCount ?? 0) + 1);
+    const sb = (b.rating ?? 0) * Math.log((b.reviewCount ?? 0) + 1);
+    if (sb !== sa) return sb - sa;
+    return a.name.localeCompare(b.name, "ar");
+  });
+
+  const page = Math.max(1, parseInt(sp.page ?? "1", 10) || 1);
+  const totalPages = Math.max(1, Math.ceil(sortedResults.length / PAGE_SIZE));
+  const results = sortedResults.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  function pageHref(p: number) {
+    const params = new URLSearchParams();
+    for (const [k, v] of Object.entries(sp)) {
+      if (v && k !== "page") params.set(k, String(v));
+    }
+    if (p > 1) params.set("page", String(p));
+    const qs = params.toString();
+    return qs ? `/search?${qs}` : "/search";
+  }
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
@@ -48,12 +71,12 @@ export default async function SearchPage({
           <input
             name="q"
             defaultValue={sp.q ?? ""}
-            placeholder="اسم مدرسة..."
+            placeholder="اسم مدرسة، حي..."
             className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-teal-500"
           />
         </Field>
-        <Field label="الحي">
-          <Select name="neighborhood" value={sp.neighborhood} options={NEIGHBORHOODS} />
+        <Field label="المدينة">
+          <Select name="city" value={sp.city} options={CITIES} />
         </Field>
         <Field label="نوع المدرسة">
           <Select name="type" value={sp.type} options={TYPES} />
@@ -64,8 +87,12 @@ export default async function SearchPage({
         <Field label="النوع">
           <Select name="gender" value={sp.gender} options={GENDERS} />
         </Field>
-        <Field label="المرحلة">
-          <Select name="stage" value={sp.stage} options={STAGES} />
+        <Field label="المرحلة الدراسية">
+          <Select
+            name="gradeLevel"
+            value={sp.gradeLevel}
+            options={GRADE_LEVELS}
+          />
         </Field>
         <div className="sm:col-span-2 lg:col-span-3 flex gap-2">
           <button
@@ -83,13 +110,19 @@ export default async function SearchPage({
         </div>
       </form>
 
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
         <p className="text-slate-700">
           <span className="font-bold text-teal-700">
-            {results.length.toLocaleString("ar-SA")}
+            {allResults.length.toLocaleString("ar-SA")}
           </span>{" "}
           مدرسة
         </p>
+        {totalPages > 1 && (
+          <p className="text-sm text-slate-500">
+            صفحة {page.toLocaleString("ar-SA")} من{" "}
+            {totalPages.toLocaleString("ar-SA")}
+          </p>
+        )}
       </div>
 
       {results.length === 0 ? (
@@ -105,11 +138,37 @@ export default async function SearchPage({
           </Link>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {results.map((s) => (
-            <SchoolCard key={s.id} school={s} />
-          ))}
-        </div>
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {results.map((s) => (
+              <SchoolCard key={s.id} school={s} />
+            ))}
+          </div>
+
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2 mt-8 flex-wrap">
+              {page > 1 && (
+                <Link
+                  href={pageHref(page - 1)}
+                  className="px-4 py-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 text-sm"
+                >
+                  ← السابق
+                </Link>
+              )}
+              <span className="text-sm text-slate-600 px-3">
+                {page.toLocaleString("ar-SA")} / {totalPages.toLocaleString("ar-SA")}
+              </span>
+              {page < totalPages && (
+                <Link
+                  href={pageHref(page + 1)}
+                  className="px-4 py-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 text-sm"
+                >
+                  التالي →
+                </Link>
+              )}
+            </div>
+          )}
+        </>
       )}
     </div>
   );

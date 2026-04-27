@@ -29,7 +29,29 @@
       "Bash(curl -s -o /dev/null -w 'HTTPS /map : HTTP %{http_code}\\\\n' https://fisool.finalizat.com/map)",
       "Bash(curl -s -o /dev/null -w 'HTTPS /schools/manarat-alolaya : HTTP %{http_code}\\\\n' https://fisool.finalizat.com/schools/manarat-alolaya)",
       "Bash(curl -s -o /dev/null -w 'HTTP redirect \\(should 301\\): %{http_code}\\\\n' http://fisool.finalizat.com/)",
-      "Bash(git -c user.email=islam.aboughazala@gmail.com -c 'user.name=Islam Aboughazala' commit -m 'Rebrand to فصول, add per-grade fees, expand to 22 neighborhoods + 40 schools *)"
+      "Bash(git -c user.email=islam.aboughazala@gmail.com -c 'user.name=Islam Aboughazala' commit -m 'Rebrand to فصول, add per-grade fees, expand to 22 neighborhoods + 40 schools *)",
+      "Bash(git push *)",
+      "Bash(curl -s -X POST https://overpass-api.de/api/interpreter --data-urlencode data@/tmp/overpass_query.txt -o /tmp/riyadh_schools.json -w 'HTTP %{http_code} | size %{size_download} bytes | time %{time_total}s\\\\n')",
+      "Bash(node -e \"console.log\\(JSON.parse\\(require\\('fs'\\).readFileSync\\('/tmp/riyadh_schools.json','utf8'\\)\\).elements.length\\)\")",
+      "Bash(echo \"Total elements: $\\(node -e \"console.log\\(JSON.parse\\(require\\('fs'\\).readFileSync\\('/tmp/riyadh_schools.json','utf8'\\)\\).elements.length\\)\"\\)\")",
+      "Bash(node -e ' *)",
+      "Bash(node scripts/fetch-osm-schools.mjs)",
+      "Bash(curl -s -H \"User-Agent: Mozilla/5.0\" \"https://open.data.gov.sa/api/datasets/list?keyword=%D9%85%D8%AF%D8%A7%D8%B1%D8%B3&page=1\")",
+      "Bash(curl -s -H \"User-Agent: Mozilla/5.0\" \"https://open.data.gov.sa/api/datasets/list?keyword=schools&page=1\")",
+      "Bash(node scripts/build-schools.mjs)",
+      "Bash(NODE_OPTIONS=\"--max-old-space-size=6144\" npx next build)",
+      "Bash(NODE_OPTIONS=\"--max-old-space-size=6144\" npx next build --webpack)",
+      "Bash(NODE_OPTIONS=\"--max-old-space-size=4096\" npx next build)",
+      "Bash(python -c ' *)",
+      "Bash(PYTHONIOENCODING=utf-8 python scripts/export-from-sqlite.py)",
+      "Bash(NODE_OPTIONS=\"--max-old-space-size=4096\" npx next start -p 3050)",
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code} | %{size_download}b\\\\n\" http://localhost:3050/)",
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code} | %{size_download}b\\\\n\" http://localhost:3050/search)",
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code} | %{size_download}b\\\\n\" \"http://localhost:3050/search?city=%D8%AC%D8%AF%D8%A9\")",
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code} | %{size_download}b\\\\n\" http://localhost:3050/map)",
+      "Bash(awk '{print $5}')",
+      "Bash(xargs -r -I {} taskkill //F //PID {})",
+      "Bash(git -c user.email=islam.aboughazala@gmail.com -c 'user.name=Islam Aboughazala' commit -m 'Replace fake data with 1,824 real Saudi schools + rich data *)"
     ]
   }
 }

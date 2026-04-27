@@ -1,19 +1,31 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import type { Metadata } from "next";
 import {
   getSchoolBySlug,
-  getAllSlugs,
-  formatFees,
-  formatFee,
-  generateGradeFees,
+  formatSAR,
+  formatFeeRange,
+  curriculumTokens,
+  gradeLevelTokens,
   schools,
 } from "@/lib/schools";
-import type { Stage } from "@/lib/types";
 import SchoolCard from "@/components/SchoolCard";
 
+// We generate the top ~150 schools statically. The rest render on-demand —
+// otherwise building 1,800 pages exhausts the build worker's heap.
+export const dynamicParams = true;
+
 export function generateStaticParams() {
-  return getAllSlugs().map((slug) => ({ slug }));
+  return [...schools]
+    .filter((s) => (s.rating ?? 0) >= 4 && (s.reviewCount ?? 0) >= 5)
+    .sort((a, b) => {
+      const sa = (a.rating ?? 0) * Math.log((a.reviewCount ?? 0) + 1);
+      const sb = (b.rating ?? 0) * Math.log((b.reviewCount ?? 0) + 1);
+      return sb - sa;
+    })
+    .slice(0, 150)
+    .map((s) => ({ slug: s.slug }));
 }
 
 export async function generateMetadata({
@@ -24,12 +36,16 @@ export async function generateMetadata({
   const { slug } = await params;
   const s = getSchoolBySlug(slug);
   if (!s) return { title: "المدرسة غير موجودة" };
+  const desc =
+    s.about?.slice(0, 160) ??
+    `${s.name} في ${s.district ? `${s.district}، ` : ""}${s.city ?? "المملكة"} — ${s.type ?? "مدرسة"}.`;
   return {
     title: s.name,
-    description: s.description,
+    description: desc,
     openGraph: {
       title: s.name,
-      description: s.description,
+      description: desc,
+      images: s.photo?.originalUrl ? [s.photo.originalUrl] : undefined,
     },
   };
 }
@@ -44,8 +60,15 @@ export default async function SchoolPage({
   if (!s) notFound();
 
   const similar = schools
-    .filter((x) => x.id !== s.id && x.neighborhood === s.neighborhood)
+    .filter(
+      (x) =>
+        x.id !== s.id && x.city === s.city && x.district === s.district,
+    )
     .slice(0, 3);
+
+  const curricula = curriculumTokens(s);
+  const grades = gradeLevelTokens(s);
+  const hasFees = s.fees || s.startingFee !== undefined;
 
   return (
     <article className="max-w-5xl mx-auto px-4 py-8">
@@ -54,16 +77,39 @@ export default async function SchoolPage({
         <Link href="/" className="hover:text-teal-700">
           الرئيسية
         </Link>
-        <span>/</span>
-        <Link
-          href={`/search?neighborhood=${encodeURIComponent(s.neighborhood)}`}
-          className="hover:text-teal-700"
-        >
-          {s.neighborhood}
-        </Link>
-        <span>/</span>
-        <span className="text-slate-700">{s.name}</span>
+        {s.city && (
+          <>
+            <span>/</span>
+            <Link
+              href={`/search?city=${encodeURIComponent(s.city)}`}
+              className="hover:text-teal-700"
+            >
+              {s.city}
+            </Link>
+          </>
+        )}
+        {s.district && (
+          <>
+            <span>/</span>
+            <span className="text-slate-700">{s.district}</span>
+          </>
+        )}
       </nav>
+
+      {/* Hero with photo */}
+      {s.photo?.originalUrl && (
+        <div className="relative aspect-[16/7] rounded-2xl overflow-hidden mb-6 bg-slate-100">
+          <Image
+            src={s.photo.originalUrl}
+            alt={s.name}
+            fill
+            sizes="(max-width: 1024px) 100vw, 1024px"
+            className="object-cover"
+            priority
+            unoptimized
+          />
+        </div>
+      )}
 
       {/* Header */}
       <header className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 mb-6">
@@ -72,139 +118,158 @@ export default async function SchoolPage({
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mb-2">
               {s.name}
             </h1>
-            {s.nameEn && (
+            {s.nameEn && s.nameEn !== s.name && (
               <p className="text-slate-500 mb-2" dir="ltr">
                 {s.nameEn}
               </p>
             )}
-            <p className="text-slate-600">{s.address}</p>
+            <p className="text-slate-600">
+              {[s.district, s.city].filter(Boolean).join("، ")}
+            </p>
           </div>
           {s.rating && (
-            <div className="shrink-0 inline-flex items-center gap-2 bg-amber-50 text-amber-700 px-4 py-2 rounded-xl text-lg font-bold">
-              ★ {s.rating.toFixed(1)}
+            <div className="shrink-0 inline-flex flex-col items-center gap-1 bg-amber-50 text-amber-700 px-4 py-3 rounded-xl">
+              <span className="text-2xl font-bold leading-none">
+                ★ {s.rating.toFixed(1)}
+              </span>
+              {s.reviewCount ? (
+                <span className="text-xs text-amber-600">
+                  {s.reviewCount.toLocaleString("ar-SA")} تقييم
+                </span>
+              ) : null}
             </div>
           )}
         </div>
 
         <div className="flex flex-wrap gap-2 mb-6">
-          <Pill>{s.type}</Pill>
-          <Pill>{s.curriculum}</Pill>
-          <Pill>{s.gender}</Pill>
-          {s.stages.map((st) => (
-            <Pill key={st}>{st}</Pill>
+          {s.type && <Pill>{s.type}</Pill>}
+          {s.gender && <Pill>{s.gender}</Pill>}
+          {curricula.map((c) => (
+            <Pill key={c}>{c}</Pill>
           ))}
         </div>
 
-        <p className="text-slate-700 leading-loose">{s.description}</p>
+        {grades.length > 0 && (
+          <p className="text-sm text-slate-600 mb-4">
+            <span className="text-slate-400">المراحل: </span>
+            {grades.join("، ")}
+          </p>
+        )}
+
+        {s.about && (
+          <div className="text-slate-700 leading-loose whitespace-pre-line border-t border-slate-100 pt-4">
+            {s.about}
+          </div>
+        )}
       </header>
 
-      {/* Quick facts grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-        <InfoCard label="الرسوم السنوية" value={formatFees(s.feesMin, s.feesMax)} />
-        <InfoCard label="الحي" value={s.neighborhood} />
-        {s.established && (
-          <InfoCard label="سنة التأسيس" value={s.established.toString()} />
+      {/* Quick facts */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+        <InfoCard
+          label="الرسوم"
+          value={formatFeeRange(s)}
+          muted={!hasFees}
+        />
+        {s.foundedYear && (
+          <InfoCard label="سنة التأسيس" value={s.foundedYear.toString()} />
         )}
-        {s.studentsCount && (
+        {s.reviewCount !== undefined && s.reviewCount > 0 && (
           <InfoCard
-            label="عدد الطلاب"
-            value={s.studentsCount.toLocaleString("ar-SA")}
+            label="عدد التقييمات"
+            value={s.reviewCount.toLocaleString("ar-SA")}
+          />
+        )}
+        {s.fees?.count && (
+          <InfoCard
+            label="عدد فئات الرسوم"
+            value={s.fees.count.toLocaleString("ar-SA")}
           />
         )}
       </div>
 
-      {/* Per-grade fees */}
-      <section className="bg-white rounded-2xl border border-slate-200 p-6 mb-6">
-        <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-          <h2 className="font-bold text-lg text-slate-900">
-            الرسوم الدراسية لكل صف
+      {/* Sub-ratings */}
+      {s.subRatings && Object.keys(s.subRatings).length > 0 && (
+        <section className="bg-white rounded-2xl border border-slate-200 p-6 mb-6">
+          <h2 className="font-bold text-lg text-slate-900 mb-4">
+            تقييمات تفصيلية من أولياء الأمور
           </h2>
-          <span className="text-xs text-slate-500">
-            الرسوم سنوية تقريبية بالريال السعودي
-          </span>
-        </div>
-        <FeesTable schoolId={s.id} stages={s.stages} feesMin={s.feesMin} feesMax={s.feesMax} />
-        <p className="text-xs text-slate-500 mt-3 leading-relaxed">
-          * الأرقام تقديرية بناءً على نطاق المدرسة العام، وقد تختلف الرسوم الفعلية
-          مع رسوم التسجيل والكتب والنقل. يُنصح بالتواصل مع المدرسة لتأكيد الأسعار.
-        </p>
-      </section>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {Object.entries(s.subRatings).map(([cat, val]) => (
+              <RatingBar key={cat} label={cat} value={val} />
+            ))}
+          </div>
+        </section>
+      )}
 
-      {/* Features */}
-      <section className="bg-white rounded-2xl border border-slate-200 p-6 mb-6">
-        <h2 className="font-bold text-lg text-slate-900 mb-4">المرافق والمميزات</h2>
-        <div className="flex flex-wrap gap-2">
-          {s.features.map((f) => (
-            <span
-              key={f}
-              className="bg-teal-50 text-teal-800 px-3 py-1.5 rounded-lg text-sm"
-            >
-              ✓ {f}
-            </span>
-          ))}
-        </div>
-      </section>
+      {/* Fees breakdown */}
+      {s.fees && (
+        <section className="bg-white rounded-2xl border border-slate-200 p-6 mb-6">
+          <h2 className="font-bold text-lg text-slate-900 mb-4">
+            تفاصيل الرسوم الدراسية
+          </h2>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+            <FeeCell label="أقل رسوم" value={formatSAR(s.fees.min)} />
+            <FeeCell label="أعلى رسوم" value={formatSAR(s.fees.max)} />
+            <FeeCell label="الوسيط" value={formatSAR(s.fees.median)} />
+            <FeeCell label="فئات" value={String(s.fees.count)} />
+          </div>
+          {(s.fees.boysMin || s.fees.girlsMin) && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-4 border-t border-slate-100">
+              {s.fees.boysMin !== undefined && s.fees.boysMax !== undefined && (
+                <div className="bg-blue-50 rounded-xl p-4">
+                  <div className="text-sm text-blue-700 mb-1">رسوم البنين</div>
+                  <div className="font-bold text-slate-900">
+                    {s.fees.boysMin === s.fees.boysMax
+                      ? formatSAR(s.fees.boysMin)
+                      : `${formatSAR(s.fees.boysMin)} - ${formatSAR(s.fees.boysMax)}`}
+                  </div>
+                </div>
+              )}
+              {s.fees.girlsMin !== undefined &&
+                s.fees.girlsMax !== undefined && (
+                  <div className="bg-pink-50 rounded-xl p-4">
+                    <div className="text-sm text-pink-700 mb-1">رسوم البنات</div>
+                    <div className="font-bold text-slate-900">
+                      {s.fees.girlsMin === s.fees.girlsMax
+                        ? formatSAR(s.fees.girlsMin)
+                        : `${formatSAR(s.fees.girlsMin)} - ${formatSAR(s.fees.girlsMax)}`}
+                    </div>
+                  </div>
+                )}
+            </div>
+          )}
+          <p className="text-xs text-slate-500 mt-4 leading-relaxed">
+            * الرسوم تُمثّل النطاق المُعلَن للمدرسة عبر صفوفها المختلفة. يُنصح
+            بالتواصل مع المدرسة لتأكيد الرسوم لصف طفلك.
+          </p>
+        </section>
+      )}
 
-      {/* Contact */}
-      <section className="bg-white rounded-2xl border border-slate-200 p-6 mb-6">
-        <h2 className="font-bold text-lg text-slate-900 mb-4">معلومات التواصل</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-          {s.phone && (
-            <a
-              href={`tel:${s.phone}`}
-              className="flex items-center gap-2 text-slate-700 hover:text-teal-700"
-            >
-              <span>📞</span>
-              <span dir="ltr">{s.phone}</span>
-            </a>
-          )}
-          {s.website && (
-            <a
-              href={s.website}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 text-slate-700 hover:text-teal-700"
-            >
-              <span>🌐</span>
-              <span>زيارة الموقع</span>
-            </a>
-          )}
-          {s.email && (
-            <a
-              href={`mailto:${s.email}`}
-              className="flex items-center gap-2 text-slate-700 hover:text-teal-700"
-            >
-              <span>✉️</span>
-              <span dir="ltr">{s.email}</span>
-            </a>
-          )}
-          <a
-            href={`https://maps.google.com/?q=${s.coordinates.lat},${s.coordinates.lng}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-2 text-slate-700 hover:text-teal-700"
-          >
-            <span>📍</span>
-            <span>افتح في خرائط Google</span>
-          </a>
-        </div>
-      </section>
-
-      {/* Map embed */}
+      {/* Map */}
       <section className="bg-white rounded-2xl border border-slate-200 p-2 mb-6 overflow-hidden">
         <iframe
           title={`موقع ${s.name}`}
           className="w-full h-72 rounded-xl"
-          src={`https://maps.google.com/maps?q=${s.coordinates.lat},${s.coordinates.lng}&z=15&output=embed`}
+          src={`https://maps.google.com/maps?q=${s.lat},${s.lng}&z=15&output=embed`}
           loading="lazy"
         />
+        <div className="text-center pt-3 pb-2">
+          <a
+            href={`https://maps.google.com/?q=${s.lat},${s.lng}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-teal-700 hover:text-teal-900 text-sm font-semibold"
+          >
+            افتح في خرائط Google ←
+          </a>
+        </div>
       </section>
 
       {/* Similar */}
       {similar.length > 0 && (
         <section className="mt-10">
           <h2 className="text-xl font-bold text-slate-900 mb-4">
-            مدارس قريبة في {s.neighborhood}
+            مدارس قريبة في نفس الحي
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {similar.map((x) => (
@@ -225,80 +290,54 @@ function Pill({ children }: { children: React.ReactNode }) {
   );
 }
 
-function InfoCard({ label, value }: { label: string; value: string }) {
+function InfoCard({
+  label,
+  value,
+  muted,
+}: {
+  label: string;
+  value: string;
+  muted?: boolean;
+}) {
   return (
     <div className="bg-white rounded-2xl border border-slate-200 p-4">
-      <div className="text-sm text-slate-500 mb-1">{label}</div>
-      <div className="font-bold text-slate-900 text-lg">{value}</div>
+      <div className="text-xs text-slate-500 mb-1">{label}</div>
+      <div
+        className={`font-bold text-base ${muted ? "text-slate-400" : "text-slate-900"}`}
+      >
+        {value}
+      </div>
     </div>
   );
 }
 
-const STAGE_LABELS: Record<Stage, { label: string; color: string }> = {
-  روضة: { label: "مرحلة الروضة", color: "bg-amber-50 text-amber-800" },
-  ابتدائي: { label: "المرحلة الابتدائية", color: "bg-teal-50 text-teal-800" },
-  متوسط: { label: "المرحلة المتوسطة", color: "bg-blue-50 text-blue-800" },
-  ثانوي: { label: "المرحلة الثانوية", color: "bg-indigo-50 text-indigo-800" },
-};
-
-function FeesTable({
-  schoolId,
-  stages,
-  feesMin,
-  feesMax,
-}: {
-  schoolId: string;
-  stages: Stage[];
-  feesMin: number;
-  feesMax: number;
-}) {
-  const fees = generateGradeFees(stages, feesMin, feesMax);
-  if (fees.length === 0) return null;
-
-  // group by stage in original order
-  const grouped: { stage: Stage; rows: typeof fees }[] = [];
-  for (const f of fees) {
-    const existing = grouped.find((g) => g.stage === f.stage);
-    if (existing) existing.rows.push(f);
-    else grouped.push({ stage: f.stage, rows: [f] });
-  }
-
+function FeeCell({ label, value }: { label: string; value: string }) {
   return (
-    <div className="space-y-5">
-      {grouped.map(({ stage, rows }) => {
-        const meta = STAGE_LABELS[stage];
-        const stageMin = Math.min(...rows.map((r) => r.fee));
-        const stageMax = Math.max(...rows.map((r) => r.fee));
-        return (
-          <div key={`${schoolId}-${stage}`} className="border border-slate-200 rounded-xl overflow-hidden">
-            <div
-              className={`flex items-center justify-between px-4 py-2.5 ${meta.color} font-bold text-sm`}
-            >
-              <span>{meta.label}</span>
-              <span className="font-normal text-xs">
-                {stageMin === stageMax
-                  ? formatFee(stageMin)
-                  : `${formatFee(stageMin)} - ${formatFee(stageMax)}`}
-              </span>
-            </div>
-            <table className="w-full text-sm">
-              <tbody>
-                {rows.map((row, i) => (
-                  <tr
-                    key={row.grade}
-                    className={i % 2 === 0 ? "bg-white" : "bg-slate-50"}
-                  >
-                    <td className="px-4 py-2 text-slate-700">{row.grade}</td>
-                    <td className="px-4 py-2 text-left font-semibold text-slate-900 tabular-nums">
-                      {formatFee(row.fee)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        );
-      })}
+    <div className="bg-slate-50 rounded-xl p-3 text-center">
+      <div className="text-xs text-slate-500 mb-1">{label}</div>
+      <div className="font-bold text-sm text-slate-900 tabular-nums">
+        {value}
+      </div>
+    </div>
+  );
+}
+
+function RatingBar({ label, value }: { label: string; value: number }) {
+  const pct = Math.max(0, Math.min(100, (value / 5) * 100));
+  return (
+    <div>
+      <div className="flex items-center justify-between text-sm mb-1.5">
+        <span className="text-slate-700">{label}</span>
+        <span className="font-bold text-amber-700 tabular-nums">
+          ★ {value.toFixed(1)}
+        </span>
+      </div>
+      <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+        <div
+          className="h-full bg-gradient-to-l from-amber-400 to-amber-500 rounded-full"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
     </div>
   );
 }

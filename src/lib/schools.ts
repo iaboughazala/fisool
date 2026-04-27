@@ -1,1041 +1,161 @@
-import type { School, Stage, GradeFee } from "./types";
-
-export const NEIGHBORHOODS = [
-  "العليا",
-  "الملقا",
-  "النرجس",
-  "الياسمين",
-  "حطين",
-  "الورود",
-  "الصحافة",
-  "الازدهار",
-  "العقيق",
-  "الرحمانية",
-  "الخزامى",
-  "النخيل",
-  "الروضة",
-  "اليرموك",
-  "الربوة",
-  "المروج",
-  "قرطبة",
-  "الملز",
-  "أم الحمام",
-  "إشبيلية",
-  "الندى",
-  "العارض",
-] as const;
-
-export const FEATURED_NEIGHBORHOODS = [
-  "العليا",
-  "الملقا",
-  "النرجس",
-  "الياسمين",
-  "حطين",
-  "الورود",
-  "العقيق",
-  "قرطبة",
-] as const;
-
-export const CURRICULA = [
-  "سعودي",
-  "أمريكي",
-  "بريطاني",
-  "IB",
-  "كندي",
-  "ثنائي اللغة",
-] as const;
-
-export const GENDERS = ["بنين", "بنات", "مختلط"] as const;
-export const STAGES = ["روضة", "ابتدائي", "متوسط", "ثانوي"] as const;
-export const TYPES = ["أهلية", "عالمية", "حكومية"] as const;
-
-export const GRADES_BY_STAGE: Record<Stage, string[]> = {
-  روضة: ["روضة 1 (KG1)", "روضة 2 (KG2)", "تمهيدي (KG3)"],
-  ابتدائي: [
-    "الأول الابتدائي",
-    "الثاني الابتدائي",
-    "الثالث الابتدائي",
-    "الرابع الابتدائي",
-    "الخامس الابتدائي",
-    "السادس الابتدائي",
-  ],
-  متوسط: ["الأول المتوسط", "الثاني المتوسط", "الثالث المتوسط"],
-  ثانوي: ["الأول الثانوي", "الثاني الثانوي", "الثالث الثانوي"],
-};
-
-const STAGE_ORDER: Stage[] = ["روضة", "ابتدائي", "متوسط", "ثانوي"];
+import type { School } from "./types";
+import schoolsRaw from "./data/schools-real.json";
 
 /**
- * Generate a per-grade fee schedule by interpolating between feesMin (lowest grade)
- * and feesMax (highest grade), rounded to nearest 500 ر.س.
+ * Source of truth for the school list.
+ * Real data exported from yaschools-style scrape (1,800+ Saudi schools).
+ * Re-run `python scripts/export-from-sqlite.py` to refresh.
  */
-export function generateGradeFees(
-  stages: Stage[],
-  feesMin: number,
-  feesMax: number,
-): GradeFee[] {
-  const orderedStages = STAGE_ORDER.filter((s) => stages.includes(s));
-  const all: { stage: Stage; grade: string }[] = [];
-  for (const stage of orderedStages) {
-    for (const grade of GRADES_BY_STAGE[stage]) {
-      all.push({ stage, grade });
-    }
-  }
-  if (all.length === 0) return [];
-  if (all.length === 1) {
-    return [{ ...all[0], fee: roundFee(feesMin) }];
-  }
-  return all.map((g, i) => {
-    const t = i / (all.length - 1);
-    const fee = feesMin + (feesMax - feesMin) * t;
-    return { ...g, fee: roundFee(fee) };
-  });
+export const schools: School[] = schoolsRaw as unknown as School[];
+
+// --- Derived facets, computed once at module load ---
+
+function uniqSorted<T>(values: Iterable<T>): T[] {
+  return Array.from(new Set(values)).sort((a, b) =>
+    String(a).localeCompare(String(b), "ar"),
+  );
 }
 
-function roundFee(n: number): number {
-  return Math.round(n / 500) * 500;
-}
+export const CITIES: string[] = uniqSorted(
+  schools.map((s) => s.city).filter((v): v is string => !!v),
+);
 
-const C = (lat: number, lng: number) => ({ lat, lng });
+export const DISTRICTS_BY_CITY: Record<string, string[]> = (() => {
+  const map: Record<string, Set<string>> = {};
+  for (const s of schools) {
+    if (!s.city || !s.district) continue;
+    (map[s.city] ??= new Set()).add(s.district);
+  }
+  return Object.fromEntries(
+    Object.entries(map).map(([city, set]) => [
+      city,
+      Array.from(set).sort((a, b) => a.localeCompare(b, "ar")),
+    ]),
+  );
+})();
 
-export const schools: School[] = [
-  {
-    id: "1",
-    slug: "manarat-alolaya",
-    name: "مدارس منارات العليا الأهلية",
-    nameEn: "Manarat Al-Olaya Schools",
-    neighborhood: "العليا",
-    address: "شارع التحلية، حي العليا، الرياض",
-    type: "أهلية",
-    curriculum: "سعودي",
-    gender: "مختلط",
-    stages: ["روضة", "ابتدائي", "متوسط", "ثانوي"],
-    feesMin: 18000,
-    feesMax: 32000,
-    phone: "+966112345678",
-    website: "https://manarat-olaya.example.sa",
-    coordinates: C(24.6928, 46.6837),
-    features: ["نقل مدرسي", "مختبرات علوم", "قاعات رياضية", "حضانة", "أنشطة لا صفية"],
-    rating: 4.5,
-    established: 1985,
-    studentsCount: 1200,
-    description:
-      "من أعرق المدارس الأهلية في الرياض، تقدم منهجاً سعودياً معززاً باللغة الإنجليزية مع تركيز على الأنشطة العلمية والرياضية.",
-  },
-  {
-    id: "2",
-    slug: "british-international-school-riyadh",
-    name: "المدرسة البريطانية العالمية بالرياض",
-    nameEn: "British International School Riyadh",
-    neighborhood: "الملقا",
-    address: "طريق الملك عبدالعزيز، حي الملقا، الرياض",
-    type: "عالمية",
-    curriculum: "بريطاني",
-    gender: "مختلط",
-    stages: ["روضة", "ابتدائي", "متوسط", "ثانوي"],
-    feesMin: 55000,
-    feesMax: 95000,
-    phone: "+966114567890",
-    website: "https://bis-riyadh.example.com",
-    coordinates: C(24.7951, 46.623),
-    features: [
-      "منهج بريطاني (IGCSE/A-Levels)",
-      "مسبح",
-      "ملاعب عالمية",
-      "مكتبة ضخمة",
-      "مختبرات حديثة",
-      "نقل",
-    ],
-    rating: 4.7,
-    established: 1979,
-    studentsCount: 1500,
-    description:
-      "مدرسة بريطانية معتمدة تقدم منهج Cambridge IGCSE وA-Levels، ببيئة دولية متعددة الثقافات وكادر تعليمي بريطاني.",
-  },
-  {
-    id: "3",
-    slug: "rowad-alkhaleej-narjs",
-    name: "مدارس رواد الخليج الأهلية - النرجس",
-    nameEn: "Rowad Al-Khaleej Schools",
-    neighborhood: "النرجس",
-    address: "حي النرجس، شمال الرياض",
-    type: "أهلية",
-    curriculum: "ثنائي اللغة",
-    gender: "بنين",
-    stages: ["روضة", "ابتدائي", "متوسط", "ثانوي"],
-    feesMin: 22000,
-    feesMax: 38000,
-    phone: "+966112223344",
-    website: "https://rowad.example.sa",
-    coordinates: C(24.8505, 46.661),
-    features: ["برنامج ثنائي اللغة", "STEM", "روبوتيكس", "نقل", "حضانة"],
-    rating: 4.4,
-    established: 2003,
-    studentsCount: 950,
-    description:
-      "مدارس رائدة في التعليم الثنائي اللغة (عربي/إنجليزي) مع تركيز قوي على STEM والبرمجة والروبوتيكس.",
-  },
-  {
-    id: "4",
-    slug: "american-international-yasmin",
-    name: "المدرسة الأمريكية الدولية - الياسمين",
-    nameEn: "American International School - Yasmin",
-    neighborhood: "الياسمين",
-    address: "حي الياسمين، شمال الرياض",
-    type: "عالمية",
-    curriculum: "أمريكي",
-    gender: "مختلط",
-    stages: ["روضة", "ابتدائي", "متوسط", "ثانوي"],
-    feesMin: 48000,
-    feesMax: 88000,
-    phone: "+966115556677",
-    website: "https://ais-yasmin.example.com",
-    coordinates: C(24.8428, 46.6519),
-    features: ["منهج أمريكي (AdvancED)", "مكتبة", "مسرح", "ملاعب", "AP Courses", "نقل"],
-    rating: 4.6,
-    established: 1995,
-    studentsCount: 1100,
-    description:
-      "مدرسة أمريكية معتمدة من AdvancED تقدم منهج الولايات المتحدة الكامل مع برامج Advanced Placement للثانوية.",
-  },
-  {
-    id: "5",
-    slug: "alfaisaliah-girls-olaya",
-    name: "مدارس الفيصلية الأهلية - بنات",
-    neighborhood: "العليا",
-    address: "شارع العروبة، حي العليا، الرياض",
-    type: "أهلية",
-    curriculum: "سعودي",
-    gender: "بنات",
-    stages: ["ابتدائي", "متوسط", "ثانوي"],
-    feesMin: 16000,
-    feesMax: 28000,
-    phone: "+966112987654",
-    coordinates: C(24.6852, 46.6745),
-    features: ["مختبرات", "أنشطة فنية", "رياضة", "نقل"],
-    rating: 4.3,
-    established: 1990,
-    studentsCount: 800,
-    description:
-      "مدارس متخصصة لتعليم البنات بمنهج سعودي معزز، تركز على التميز الأكاديمي والأنشطة الفنية.",
-  },
-  {
-    id: "6",
-    slug: "kingdom-schools-malqa",
-    name: "مدارس المملكة - الملقا",
-    nameEn: "Kingdom Schools",
-    neighborhood: "الملقا",
-    address: "طريق الأمير محمد بن سلمان، الملقا",
-    type: "أهلية",
-    curriculum: "ثنائي اللغة",
-    gender: "مختلط",
-    stages: ["روضة", "ابتدائي", "متوسط", "ثانوي"],
-    feesMin: 28000,
-    feesMax: 52000,
-    phone: "+966114440001",
-    website: "https://kingdom.example.sa",
-    coordinates: C(24.79, 46.6175),
-    features: ["منهج ثنائي اللغة", "مسبح", "ملاعب", "مسرح", "STEM Lab", "نقل", "تغذية"],
-    rating: 4.6,
-    established: 2000,
-    studentsCount: 1800,
-    description:
-      "من أكبر المجمعات التعليمية في الرياض، توفر منهجاً ثنائي اللغة ومرافق عالمية المستوى.",
-  },
-  {
-    id: "7",
-    slug: "ib-world-school-narjs",
-    name: "مدرسة IB العالمية - النرجس",
-    nameEn: "IB World School",
-    neighborhood: "النرجس",
-    address: "حي النرجس، الرياض",
-    type: "عالمية",
-    curriculum: "IB",
-    gender: "مختلط",
-    stages: ["روضة", "ابتدائي", "متوسط", "ثانوي"],
-    feesMin: 60000,
-    feesMax: 105000,
-    phone: "+966112221122",
-    website: "https://ib-narjs.example.com",
-    coordinates: C(24.8541, 46.658),
-    features: [
-      "برنامج IB كامل (PYP/MYP/DP)",
-      "مكتبة دولية",
-      "مختبرات حديثة",
-      "ملاعب",
-      "أنشطة ثقافية",
-    ],
-    rating: 4.8,
-    established: 2008,
-    studentsCount: 700,
-    description:
-      "مدرسة IB World معتمدة بالكامل، توفر برامج PYP وMYP وDiploma Programme للتأهيل للجامعات الدولية.",
-  },
-  {
-    id: "8",
-    slug: "alandalus-yasmin",
-    name: "مدارس الأندلس الأهلية - الياسمين",
-    neighborhood: "الياسمين",
-    address: "حي الياسمين، الرياض",
-    type: "أهلية",
-    curriculum: "سعودي",
-    gender: "بنين",
-    stages: ["روضة", "ابتدائي", "متوسط"],
-    feesMin: 14000,
-    feesMax: 22000,
-    phone: "+966115551111",
-    coordinates: C(24.8455, 46.6488),
-    features: ["تحفيظ القرآن", "نقل", "أنشطة رياضية"],
-    rating: 4.2,
-    established: 2010,
-    studentsCount: 550,
-    description:
-      "مدارس أهلية تركز على المنهج السعودي مع برنامج قوي لتحفيظ القرآن الكريم.",
-  },
-  {
-    id: "9",
-    slug: "canadian-bilingual-malqa",
-    name: "المدرسة الكندية ثنائية اللغة",
-    nameEn: "Canadian Bilingual School",
-    neighborhood: "الملقا",
-    address: "حي الملقا، شمال الرياض",
-    type: "عالمية",
-    curriculum: "كندي",
-    gender: "مختلط",
-    stages: ["روضة", "ابتدائي", "متوسط", "ثانوي"],
-    feesMin: 42000,
-    feesMax: 72000,
-    phone: "+966114442233",
-    website: "https://canadian.example.com",
-    coordinates: C(24.7988, 46.6201),
-    features: ["منهج أونتاريو الكندي", "فرنسي اختياري", "ملاعب", "مكتبة", "نقل"],
-    rating: 4.5,
-    established: 2012,
-    studentsCount: 850,
-    description:
-      "مدرسة كندية تقدم منهج أونتاريو OSSD بالكامل، مع خيار تعلم اللغة الفرنسية.",
-  },
-  {
-    id: "10",
-    slug: "dhahran-ahliyya-olaya",
-    name: "مدارس الظهران الأهلية - فرع العليا",
-    neighborhood: "العليا",
-    address: "حي العليا، الرياض",
-    type: "أهلية",
-    curriculum: "ثنائي اللغة",
-    gender: "بنات",
-    stages: ["روضة", "ابتدائي", "متوسط", "ثانوي"],
-    feesMin: 24000,
-    feesMax: 42000,
-    phone: "+966112334455",
-    coordinates: C(24.6951, 46.6791),
-    features: ["ثنائي اللغة", "مختبرات علوم", "STEM", "أنشطة فنية", "نقل"],
-    rating: 4.6,
-    established: 1988,
-    studentsCount: 1050,
-    description:
-      "فرع مدارس الظهران المرموقة، تقدم تعليماً ثنائي اللغة للبنات بجودة عالية.",
-  },
-  {
-    id: "11",
-    slug: "future-generations-yasmin",
-    name: "مدارس أجيال المستقبل الأهلية",
-    neighborhood: "الياسمين",
-    address: "حي الياسمين، الرياض",
-    type: "أهلية",
-    curriculum: "سعودي",
-    gender: "مختلط",
-    stages: ["روضة", "ابتدائي"],
-    feesMin: 12000,
-    feesMax: 18000,
-    phone: "+966115559900",
-    coordinates: C(24.8401, 46.6562),
-    features: ["حضانة", "روضة", "أنشطة لا صفية", "نقل"],
-    rating: 4.1,
-    established: 2015,
-    studentsCount: 320,
-    description:
-      "مدرسة جديدة نسبياً تركز على المراحل الأولى مع بيئة محفزة للأطفال.",
-  },
-  {
-    id: "12",
-    slug: "stem-academy-narjs",
-    name: "أكاديمية STEM الأهلية",
-    nameEn: "STEM Academy",
-    neighborhood: "النرجس",
-    address: "حي النرجس، الرياض",
-    type: "أهلية",
-    curriculum: "أمريكي",
-    gender: "مختلط",
-    stages: ["متوسط", "ثانوي"],
-    feesMin: 35000,
-    feesMax: 58000,
-    phone: "+966112229988",
-    website: "https://stem-academy.example.sa",
-    coordinates: C(24.8488, 46.6635),
-    features: [
-      "تركيز على العلوم والرياضيات",
-      "روبوتيكس",
-      "برمجة",
-      "مختبرات هندسية",
-      "AP Courses",
-    ],
-    rating: 4.7,
-    established: 2017,
-    studentsCount: 480,
-    description:
-      "أكاديمية متخصصة في تعليم STEM بمنهج أمريكي، تستهدف الطلاب الموهوبين علمياً.",
-  },
-  {
-    id: "13",
-    slug: "alroya-malqa-girls",
-    name: "مدارس الرؤية الأهلية - بنات",
-    neighborhood: "الملقا",
-    address: "حي الملقا، شمال الرياض",
-    type: "أهلية",
-    curriculum: "سعودي",
-    gender: "بنات",
-    stages: ["روضة", "ابتدائي", "متوسط", "ثانوي"],
-    feesMin: 17000,
-    feesMax: 30000,
-    phone: "+966114448822",
-    coordinates: C(24.7905, 46.6298),
-    features: ["مختبرات", "قاعة رياضية", "أنشطة فنية", "نقل"],
-    rating: 4.3,
-    established: 2005,
-    studentsCount: 720,
-    description: "مدارس بنات بمنهج سعودي معزز وأنشطة متنوعة في بيئة آمنة.",
-  },
-  {
-    id: "14",
-    slug: "global-academy-yasmin",
-    name: "الأكاديمية العالمية - الياسمين",
-    nameEn: "Global Academy",
-    neighborhood: "الياسمين",
-    address: "حي الياسمين، الرياض",
-    type: "عالمية",
-    curriculum: "أمريكي",
-    gender: "مختلط",
-    stages: ["روضة", "ابتدائي", "متوسط"],
-    feesMin: 38000,
-    feesMax: 62000,
-    phone: "+966115557722",
-    website: "https://global-academy.example.com",
-    coordinates: C(24.8412, 46.6541),
-    features: ["منهج أمريكي", "ESL", "ملاعب", "مختبرات", "نقل"],
-    rating: 4.4,
-    established: 2014,
-    studentsCount: 600,
-    description:
-      "أكاديمية أمريكية للمراحل الأولى والمتوسطة، تركز على بناء الأساسيات بمنهج عالمي.",
-  },
-  {
-    id: "15",
-    slug: "alolaya-bilingual",
-    name: "مدارس العليا ثنائية اللغة",
-    neighborhood: "العليا",
-    address: "حي العليا، الرياض",
-    type: "أهلية",
-    curriculum: "ثنائي اللغة",
-    gender: "مختلط",
-    stages: ["روضة", "ابتدائي", "متوسط", "ثانوي"],
-    feesMin: 26000,
-    feesMax: 45000,
-    phone: "+966112221177",
-    coordinates: C(24.6981, 46.6852),
-    features: ["ثنائي اللغة", "STEM", "أنشطة ثقافية", "نقل", "تغذية"],
-    rating: 4.5,
-    established: 1998,
-    studentsCount: 1300,
-    description:
-      "مجمع تعليمي ثنائي اللغة في قلب العليا، يجمع بين القيم المحلية والمعايير الدولية.",
-  },
-  {
-    id: "16",
-    slug: "narjs-international",
-    name: "مدارس النرجس العالمية",
-    nameEn: "Narjs International",
-    neighborhood: "النرجس",
-    address: "حي النرجس، شمال الرياض",
-    type: "عالمية",
-    curriculum: "بريطاني",
-    gender: "مختلط",
-    stages: ["روضة", "ابتدائي", "متوسط", "ثانوي"],
-    feesMin: 50000,
-    feesMax: 85000,
-    phone: "+966112226633",
-    website: "https://narjs-intl.example.com",
-    coordinates: C(24.8523, 46.6592),
-    features: ["IGCSE", "A-Levels", "مختبرات عالمية", "ملاعب", "مسرح", "نقل"],
-    rating: 4.6,
-    established: 2010,
-    studentsCount: 980,
-    description:
-      "مدرسة بريطانية حديثة في النرجس، توفر منهج كامبردج كاملاً وكادر بريطاني.",
-  },
-  {
-    id: "17",
-    slug: "tarbiya-namozajia-malqa",
-    name: "مدارس التربية النموذجية - الملقا",
-    neighborhood: "الملقا",
-    address: "حي الملقا، الرياض",
-    type: "أهلية",
-    curriculum: "سعودي",
-    gender: "بنين",
-    stages: ["ابتدائي", "متوسط", "ثانوي"],
-    feesMin: 15000,
-    feesMax: 26000,
-    phone: "+966114449911",
-    coordinates: C(24.7972, 46.625),
-    features: ["تحفيظ القرآن", "أنشطة رياضية", "مختبرات", "نقل"],
-    rating: 4.2,
-    established: 1992,
-    studentsCount: 870,
-    description:
-      "مدارس بنين بمنهج سعودي معزز ببرنامج قوي لتحفيظ القرآن وأنشطة رياضية متنوعة.",
-  },
-  {
-    id: "18",
-    slug: "tatweer-yasmin-girls",
-    name: "مدارس التطوير الأهلية - بنات",
-    neighborhood: "الياسمين",
-    address: "حي الياسمين، الرياض",
-    type: "أهلية",
-    curriculum: "ثنائي اللغة",
-    gender: "بنات",
-    stages: ["روضة", "ابتدائي", "متوسط", "ثانوي"],
-    feesMin: 20000,
-    feesMax: 36000,
-    phone: "+966115558844",
-    website: "https://tatweer.example.sa",
-    coordinates: C(24.8465, 46.6502),
-    features: ["ثنائي اللغة", "STEM", "أنشطة فنية", "مكتبة", "نقل"],
-    rating: 4.5,
-    established: 2007,
-    studentsCount: 920,
-    description:
-      "مدارس بنات تجمع بين الأكاديميا القوية والأنشطة الإبداعية في بيئة محفزة.",
-  },
-  // ----- New schools 19-44 -----
-  {
-    id: "19",
-    slug: "alfaisaliah-hittin",
-    name: "مدارس الفيصلية الأهلية - حطين",
-    neighborhood: "حطين",
-    address: "حي حطين، شمال غرب الرياض",
-    type: "أهلية",
-    curriculum: "ثنائي اللغة",
-    gender: "مختلط",
-    stages: ["روضة", "ابتدائي", "متوسط", "ثانوي"],
-    feesMin: 25000,
-    feesMax: 44000,
-    phone: "+966114447700",
-    website: "https://faisaliah-hittin.example.sa",
-    coordinates: C(24.7625, 46.5825),
-    features: ["ثنائي اللغة", "STEM", "ملاعب", "مكتبة", "نقل"],
-    rating: 4.5,
-    established: 2009,
-    studentsCount: 1100,
-    description:
-      "مجمع تعليمي حديث في حطين، يجمع بين منهج سعودي معزز وبيئة عالمية المعايير.",
-  },
-  {
-    id: "20",
-    slug: "alworood-academy",
-    name: "الأكاديمية الدولية - الورود",
-    nameEn: "Worood International Academy",
-    neighborhood: "الورود",
-    address: "حي الورود، شمال الرياض",
-    type: "عالمية",
-    curriculum: "أمريكي",
-    gender: "مختلط",
-    stages: ["روضة", "ابتدائي", "متوسط", "ثانوي"],
-    feesMin: 45000,
-    feesMax: 78000,
-    phone: "+966112225500",
-    website: "https://worood-academy.example.com",
-    coordinates: C(24.7283, 46.6798),
-    features: ["منهج أمريكي", "AP Courses", "مكتبة", "ملاعب", "نقل"],
-    rating: 4.5,
-    established: 2011,
-    studentsCount: 950,
-    description:
-      "أكاديمية أمريكية شاملة في حي الورود، توفر منهج US Common Core مع برامج AP للثانوية.",
-  },
-  {
-    id: "21",
-    slug: "rowad-sahafa",
-    name: "مدارس الرواد الأهلية - الصحافة",
-    neighborhood: "الصحافة",
-    address: "حي الصحافة، شمال الرياض",
-    type: "أهلية",
-    curriculum: "سعودي",
-    gender: "بنين",
-    stages: ["ابتدائي", "متوسط", "ثانوي"],
-    feesMin: 13000,
-    feesMax: 22000,
-    phone: "+966112227700",
-    coordinates: C(24.7825, 46.6451),
-    features: ["تحفيظ القرآن", "نقل", "ملاعب", "مختبرات"],
-    rating: 4.2,
-    established: 1996,
-    studentsCount: 780,
-    description:
-      "مدارس بنين بمنهج سعودي وبرنامج قوي لتحفيظ القرآن، بأسعار مناسبة لمعظم الأسر.",
-  },
-  {
-    id: "22",
-    slug: "izdihar-international",
-    name: "مدارس الازدهار العالمية",
-    nameEn: "Izdihar International Schools",
-    neighborhood: "الازدهار",
-    address: "حي الازدهار، شرق الرياض",
-    type: "عالمية",
-    curriculum: "IB",
-    gender: "مختلط",
-    stages: ["روضة", "ابتدائي", "متوسط", "ثانوي"],
-    feesMin: 58000,
-    feesMax: 98000,
-    phone: "+966112221199",
-    website: "https://izdihar-intl.example.com",
-    coordinates: C(24.7505, 46.7152),
-    features: ["IB PYP/MYP/DP", "مكتبة دولية", "مختبرات", "مسرح", "ملاعب", "نقل"],
-    rating: 4.7,
-    established: 2013,
-    studentsCount: 760,
-    description:
-      "مدرسة IB World معتمدة، تقدم البرنامج الدولي الكامل ببيئة متعددة الثقافات.",
-  },
-  {
-    id: "23",
-    slug: "aqiq-girls",
-    name: "مدارس العقيق الأهلية - بنات",
-    neighborhood: "العقيق",
-    address: "حي العقيق، شمال الرياض",
-    type: "أهلية",
-    curriculum: "ثنائي اللغة",
-    gender: "بنات",
-    stages: ["روضة", "ابتدائي", "متوسط", "ثانوي"],
-    feesMin: 23000,
-    feesMax: 40000,
-    phone: "+966112224488",
-    coordinates: C(24.7720, 46.6485),
-    features: ["ثنائي اللغة", "أنشطة فنية", "مختبرات علوم", "نقل"],
-    rating: 4.4,
-    established: 2008,
-    studentsCount: 850,
-    description:
-      "مدارس بنات في العقيق تقدم تعليماً ثنائي اللغة مع أنشطة إبداعية متنوعة.",
-  },
-  {
-    id: "24",
-    slug: "rahmaniah-kindergarten",
-    name: "روضة وابتدائي الرحمانية الأهلية",
-    neighborhood: "الرحمانية",
-    address: "حي الرحمانية، الرياض",
-    type: "أهلية",
-    curriculum: "سعودي",
-    gender: "مختلط",
-    stages: ["روضة", "ابتدائي"],
-    feesMin: 11000,
-    feesMax: 17000,
-    phone: "+966112223377",
-    coordinates: C(24.7205, 46.6585),
-    features: ["حضانة", "روضة", "نقل", "أنشطة"],
-    rating: 4.0,
-    established: 2018,
-    studentsCount: 280,
-    description:
-      "مدرسة صغيرة العائلية تركز على الروضة والمراحل الأولى من الابتدائي بأجواء دافئة.",
-  },
-  {
-    id: "25",
-    slug: "khuzama-international",
-    name: "مدارس الخزامى الدولية",
-    nameEn: "Khuzama International",
-    neighborhood: "الخزامى",
-    address: "حي الخزامى، الرياض",
-    type: "عالمية",
-    curriculum: "بريطاني",
-    gender: "مختلط",
-    stages: ["روضة", "ابتدائي", "متوسط", "ثانوي"],
-    feesMin: 52000,
-    feesMax: 90000,
-    phone: "+966112229988",
-    website: "https://khuzama-intl.example.com",
-    coordinates: C(24.7081, 46.6905),
-    features: ["IGCSE", "A-Levels", "مختبرات", "مسبح", "ملاعب", "نقل"],
-    rating: 4.6,
-    established: 2006,
-    studentsCount: 1050,
-    description:
-      "مدرسة بريطانية معتمدة في حي الخزامى، توفر منهج كامبردج مع كادر دولي.",
-  },
-  {
-    id: "26",
-    slug: "nakheel-namozajia",
-    name: "مدارس النخيل النموذجية",
-    neighborhood: "النخيل",
-    address: "حي النخيل، شرق الرياض",
-    type: "أهلية",
-    curriculum: "سعودي",
-    gender: "بنين",
-    stages: ["روضة", "ابتدائي", "متوسط", "ثانوي"],
-    feesMin: 16000,
-    feesMax: 28000,
-    phone: "+966112225522",
-    coordinates: C(24.7705, 46.7155),
-    features: ["تحفيظ القرآن", "مختبرات", "ملاعب", "نقل"],
-    rating: 4.3,
-    established: 1999,
-    studentsCount: 990,
-    description:
-      "مدارس بنين شاملة لكل المراحل بمنهج سعودي وبرنامج تحفيظ مميز.",
-  },
-  {
-    id: "27",
-    slug: "rawdah-girls",
-    name: "مدارس الروضة الأهلية - بنات",
-    neighborhood: "الروضة",
-    address: "حي الروضة، شرق الرياض",
-    type: "أهلية",
-    curriculum: "سعودي",
-    gender: "بنات",
-    stages: ["ابتدائي", "متوسط", "ثانوي"],
-    feesMin: 14000,
-    feesMax: 24000,
-    phone: "+966112226699",
-    coordinates: C(24.7058, 46.7951),
-    features: ["مختبرات", "أنشطة فنية", "نقل"],
-    rating: 4.2,
-    established: 1994,
-    studentsCount: 730,
-    description:
-      "مدارس بنات بمنهج سعودي معزز بإنجليزي قوي، في حي الروضة الهادئ.",
-  },
-  {
-    id: "28",
-    slug: "yarmouk-ahliyya",
-    name: "مدارس اليرموك الأهلية",
-    neighborhood: "اليرموك",
-    address: "حي اليرموك، شرق الرياض",
-    type: "أهلية",
-    curriculum: "سعودي",
-    gender: "مختلط",
-    stages: ["روضة", "ابتدائي", "متوسط"],
-    feesMin: 12000,
-    feesMax: 19000,
-    phone: "+966112224411",
-    coordinates: C(24.8055, 46.7705),
-    features: ["نقل", "أنشطة لا صفية", "روضة"],
-    rating: 4.0,
-    established: 2002,
-    studentsCount: 620,
-    description:
-      "مدارس أهلية بأسعار اقتصادية ومنهج سعودي للمراحل الأساسية في حي اليرموك.",
-  },
-  {
-    id: "29",
-    slug: "rabwa-international",
-    name: "مدارس الربوة العالمية",
-    nameEn: "Rabwa International",
-    neighborhood: "الربوة",
-    address: "حي الربوة، الرياض",
-    type: "عالمية",
-    curriculum: "أمريكي",
-    gender: "مختلط",
-    stages: ["روضة", "ابتدائي", "متوسط", "ثانوي"],
-    feesMin: 40000,
-    feesMax: 70000,
-    phone: "+966112338811",
-    website: "https://rabwa-intl.example.com",
-    coordinates: C(24.7305, 46.7355),
-    features: ["منهج أمريكي", "مكتبة", "مختبرات", "ملاعب", "نقل"],
-    rating: 4.4,
-    established: 2010,
-    studentsCount: 880,
-    description:
-      "مدرسة أمريكية معتمدة في حي الربوة، تقدم منهج Common Core مع تدريس عربي قوي.",
-  },
-  {
-    id: "30",
-    slug: "muruj-bilingual-boys",
-    name: "مدارس المروج الأهلية - بنين",
-    neighborhood: "المروج",
-    address: "حي المروج، شمال الرياض",
-    type: "أهلية",
-    curriculum: "ثنائي اللغة",
-    gender: "بنين",
-    stages: ["روضة", "ابتدائي", "متوسط", "ثانوي"],
-    feesMin: 21000,
-    feesMax: 36000,
-    phone: "+966112223399",
-    coordinates: C(24.7948, 46.6755),
-    features: ["ثنائي اللغة", "STEM", "ملاعب", "نقل"],
-    rating: 4.3,
-    established: 2005,
-    studentsCount: 920,
-    description:
-      "مدارس بنين ثنائية اللغة في المروج، تركز على الأكاديميا والرياضة معاً.",
-  },
-  {
-    id: "31",
-    slug: "qurtuba-academy-girls",
-    name: "أكاديمية قرطبة - بنات",
-    neighborhood: "قرطبة",
-    address: "حي قرطبة، شرق الرياض",
-    type: "أهلية",
-    curriculum: "سعودي",
-    gender: "بنات",
-    stages: ["روضة", "ابتدائي", "متوسط", "ثانوي"],
-    feesMin: 18000,
-    feesMax: 32000,
-    phone: "+966112227755",
-    coordinates: C(24.7855, 46.7905),
-    features: ["مختبرات", "أنشطة فنية", "تحفيظ", "نقل"],
-    rating: 4.4,
-    established: 2001,
-    studentsCount: 880,
-    description:
-      "أكاديمية بنات بمنهج سعودي ومسار تحفيظ قرآن متميز في قلب حي قرطبة.",
-  },
-  {
-    id: "32",
-    slug: "malaz-ahliyya",
-    name: "مدارس الملز الأهلية",
-    neighborhood: "الملز",
-    address: "حي الملز، وسط الرياض",
-    type: "أهلية",
-    curriculum: "سعودي",
-    gender: "مختلط",
-    stages: ["ابتدائي", "متوسط", "ثانوي"],
-    feesMin: 11000,
-    feesMax: 18000,
-    phone: "+966112335577",
-    coordinates: C(24.6802, 46.7355),
-    features: ["نقل", "مختبرات"],
-    rating: 3.9,
-    established: 1985,
-    studentsCount: 1050,
-    description:
-      "من أقدم المدارس الأهلية في وسط الرياض، تقدم منهجاً سعودياً بأسعار اقتصادية.",
-  },
-  {
-    id: "33",
-    slug: "umm-alhamam-girls",
-    name: "مدارس أم الحمام الأهلية - بنات",
-    neighborhood: "أم الحمام",
-    address: "حي أم الحمام، غرب الرياض",
-    type: "أهلية",
-    curriculum: "ثنائي اللغة",
-    gender: "بنات",
-    stages: ["روضة", "ابتدائي", "متوسط"],
-    feesMin: 17000,
-    feesMax: 27000,
-    phone: "+966114443377",
-    coordinates: C(24.6905, 46.6502),
-    features: ["ثنائي اللغة", "أنشطة فنية", "نقل"],
-    rating: 4.2,
-    established: 2008,
-    studentsCount: 580,
-    description:
-      "مدارس بنات في غرب الرياض، تجمع بين المنهج المحلي وتعليم اللغة الإنجليزية بقوة.",
-  },
-  {
-    id: "34",
-    slug: "ishbiliya-ahliyya",
-    name: "مدارس إشبيلية الأهلية",
-    neighborhood: "إشبيلية",
-    address: "حي إشبيلية، شرق الرياض",
-    type: "أهلية",
-    curriculum: "سعودي",
-    gender: "مختلط",
-    stages: ["روضة", "ابتدائي", "متوسط", "ثانوي"],
-    feesMin: 15000,
-    feesMax: 26000,
-    phone: "+966112226677",
-    coordinates: C(24.8108, 46.7605),
-    features: ["تحفيظ القرآن", "مختبرات", "ملاعب", "نقل"],
-    rating: 4.1,
-    established: 2003,
-    studentsCount: 940,
-    description:
-      "مدارس عائلية شاملة لكل المراحل بمنهج سعودي وأسعار في المتناول.",
-  },
-  {
-    id: "35",
-    slug: "nada-canadian",
-    name: "مدارس الندى الكندية",
-    nameEn: "Nada Canadian Schools",
-    neighborhood: "الندى",
-    address: "حي الندى، شمال الرياض",
-    type: "عالمية",
-    curriculum: "كندي",
-    gender: "مختلط",
-    stages: ["روضة", "ابتدائي", "متوسط", "ثانوي"],
-    feesMin: 38000,
-    feesMax: 65000,
-    phone: "+966112221166",
-    website: "https://nada-canadian.example.com",
-    coordinates: C(24.8205, 46.6303),
-    features: ["منهج أونتاريو", "OSSD", "مكتبة", "ملاعب", "نقل"],
-    rating: 4.4,
-    established: 2014,
-    studentsCount: 720,
-    description:
-      "مدرسة كندية تمنح شهادة OSSD، توفر تدريساً ثنائي اللغة بمعايير دولية.",
-  },
-  {
-    id: "36",
-    slug: "aared-ahliyya-boys",
-    name: "مدارس العارض الأهلية - بنين",
-    neighborhood: "العارض",
-    address: "حي العارض، شمال الرياض",
-    type: "أهلية",
-    curriculum: "سعودي",
-    gender: "بنين",
-    stages: ["ابتدائي", "متوسط", "ثانوي"],
-    feesMin: 13000,
-    feesMax: 22000,
-    phone: "+966112338822",
-    coordinates: C(24.9305, 46.7105),
-    features: ["تحفيظ القرآن", "ملاعب", "نقل"],
-    rating: 4.0,
-    established: 2011,
-    studentsCount: 660,
-    description:
-      "مدارس بنين في حي العارض الناشئ، تقدم منهجاً سعودياً مع برنامج تحفيظ.",
-  },
-  {
-    id: "37",
-    slug: "marefah-academy-malqa",
-    name: "أكاديمية المعرفة - الملقا",
-    nameEn: "Marefah Academy",
-    neighborhood: "الملقا",
-    address: "حي الملقا، شمال الرياض",
-    type: "أهلية",
-    curriculum: "ثنائي اللغة",
-    gender: "مختلط",
-    stages: ["روضة", "ابتدائي", "متوسط", "ثانوي"],
-    feesMin: 30000,
-    feesMax: 54000,
-    phone: "+966114447733",
-    website: "https://marefah.example.sa",
-    coordinates: C(24.7935, 46.6225),
-    features: ["ثنائي اللغة", "STEM", "روبوتيكس", "مكتبة", "ملاعب", "نقل"],
-    rating: 4.6,
-    established: 2013,
-    studentsCount: 1150,
-    description:
-      "أكاديمية حديثة في الملقا، تركز على التعليم القائم على المشاريع وتقنيات التعليم الحديثة.",
-  },
-  {
-    id: "38",
-    slug: "fajr-narjs-girls",
-    name: "مدارس الفجر الأهلية - بنات النرجس",
-    neighborhood: "النرجس",
-    address: "حي النرجس، الرياض",
-    type: "أهلية",
-    curriculum: "سعودي",
-    gender: "بنات",
-    stages: ["روضة", "ابتدائي", "متوسط", "ثانوي"],
-    feesMin: 16000,
-    feesMax: 28000,
-    phone: "+966112226611",
-    coordinates: C(24.8478, 46.6635),
-    features: ["تحفيظ القرآن", "أنشطة فنية", "نقل"],
-    rating: 4.3,
-    established: 2009,
-    studentsCount: 820,
-    description:
-      "مدارس بنات بمنهج سعودي وبرنامج تحفيظ متميز، في حي النرجس.",
-  },
-  {
-    id: "39",
-    slug: "cambridge-hittin",
-    name: "مدرسة كامبردج - حطين",
-    nameEn: "Cambridge School Hittin",
-    neighborhood: "حطين",
-    address: "حي حطين، شمال غرب الرياض",
-    type: "عالمية",
-    curriculum: "بريطاني",
-    gender: "مختلط",
-    stages: ["روضة", "ابتدائي", "متوسط", "ثانوي"],
-    feesMin: 56000,
-    feesMax: 96000,
-    phone: "+966114448811",
-    website: "https://cambridge-hittin.example.com",
-    coordinates: C(24.7588, 46.5848),
-    features: ["IGCSE", "A-Levels", "مكتبة", "مختبرات", "ملاعب", "مسرح"],
-    rating: 4.7,
-    established: 2015,
-    studentsCount: 920,
-    description:
-      "مدرسة كامبردج العالمية في حطين، توفر منهج Cambridge International Examinations كاملاً.",
-  },
-  {
-    id: "40",
-    slug: "noor-olaya-boys",
-    name: "مدارس النور الأهلية - بنين العليا",
-    neighborhood: "العليا",
-    address: "حي العليا، الرياض",
-    type: "أهلية",
-    curriculum: "سعودي",
-    gender: "بنين",
-    stages: ["ابتدائي", "متوسط", "ثانوي"],
-    feesMin: 14000,
-    feesMax: 24000,
-    phone: "+966112335599",
-    coordinates: C(24.6912, 46.6802),
-    features: ["تحفيظ القرآن", "مختبرات", "ملاعب", "نقل"],
-    rating: 4.1,
-    established: 1989,
-    studentsCount: 980,
-    description:
-      "مدارس بنين عريقة في قلب العليا، بمنهج سعودي معزز ومسار تحفيظ معتمد.",
-  },
-];
+export const TYPES: string[] = uniqSorted(
+  schools.map((s) => s.type).filter((v): v is string => !!v),
+);
+
+export const GENDERS: string[] = uniqSorted(
+  schools.map((s) => s.gender).filter((v): v is string => !!v),
+);
+
+/**
+ * Curriculum is stored as a CSV string per school. We split it for filtering UI.
+ * Returns the canonical list of distinct curriculum tokens across the dataset.
+ */
+export const CURRICULA: string[] = uniqSorted(
+  schools.flatMap((s) =>
+    (s.curriculum ?? "")
+      .split(/[,،]/)
+      .map((x) => x.trim())
+      .filter(Boolean),
+  ),
+);
+
+export const GRADE_LEVELS: string[] = uniqSorted(
+  schools.flatMap((s) =>
+    (s.gradeLevels ?? "")
+      .split(/[,،]/)
+      .map((x) => x.trim())
+      .filter(Boolean),
+  ),
+);
+
+/** Cities ranked by school count, used for home-page chips and stats. */
+export const CITIES_BY_COUNT: { city: string; count: number }[] = (() => {
+  const counts: Record<string, number> = {};
+  for (const s of schools) {
+    if (s.city) counts[s.city] = (counts[s.city] ?? 0) + 1;
+  }
+  return Object.entries(counts)
+    .map(([city, count]) => ({ city, count }))
+    .sort((a, b) => b.count - a.count);
+})();
+
+export const FEATURED_CITIES = CITIES_BY_COUNT.slice(0, 8).map((c) => c.city);
+
+// --- Lookups ---
 
 export function getSchoolBySlug(slug: string): School | undefined {
   return schools.find((s) => s.slug === slug);
 }
 
-export function getAllSlugs(): string[] {
-  return schools.map((s) => s.slug);
-}
+// --- Search ---
 
 export interface SearchFilters {
   q?: string;
-  neighborhood?: string;
+  city?: string;
+  district?: string;
   type?: string;
   curriculum?: string;
   gender?: string;
-  stage?: string;
+  gradeLevel?: string;
   feesMax?: number;
+  minRating?: number;
 }
 
 export function searchSchools(filters: SearchFilters): School[] {
   return schools.filter((s) => {
     if (filters.q) {
       const q = filters.q.trim().toLowerCase();
-      const haystack = `${s.name} ${s.nameEn ?? ""} ${s.neighborhood} ${s.description}`.toLowerCase();
+      const haystack = `${s.name} ${s.nameEn ?? ""} ${s.city ?? ""} ${s.district ?? ""} ${s.about ?? ""}`.toLowerCase();
       if (!haystack.includes(q)) return false;
     }
-    if (filters.neighborhood && s.neighborhood !== filters.neighborhood) return false;
+    if (filters.city && s.city !== filters.city) return false;
+    if (filters.district && s.district !== filters.district) return false;
     if (filters.type && s.type !== filters.type) return false;
-    if (filters.curriculum && s.curriculum !== filters.curriculum) return false;
-    if (filters.gender && s.gender !== filters.gender) return false;
-    if (filters.stage && !s.stages.includes(filters.stage as never)) return false;
-    if (filters.feesMax && s.feesMin > filters.feesMax) return false;
+    if (filters.gender && s.gender && s.gender !== filters.gender) return false;
+    if (
+      filters.curriculum &&
+      !(s.curriculum ?? "").includes(filters.curriculum)
+    )
+      return false;
+    if (
+      filters.gradeLevel &&
+      !(s.gradeLevels ?? "").includes(filters.gradeLevel)
+    )
+      return false;
+    if (filters.feesMax !== undefined) {
+      const lo = s.fees?.min ?? s.startingFee;
+      if (lo === undefined || lo > filters.feesMax) return false;
+    }
+    if (filters.minRating !== undefined) {
+      if (!s.rating || s.rating < filters.minRating) return false;
+    }
     return true;
   });
 }
 
-export function formatFees(min: number, max: number): string {
-  const fmt = (n: number) => n.toLocaleString("ar-SA");
-  return `${fmt(min)} - ${fmt(max)} ر.س`;
+// --- Formatting ---
+
+export function formatSAR(n: number | undefined): string {
+  if (n === undefined || n === null) return "غير متوفرة";
+  return `${n.toLocaleString("ar-SA")} ر.س`;
 }
 
-export function formatFee(n: number): string {
-  return `${n.toLocaleString("ar-SA")} ر.س`;
+export function formatFeeRange(s: School): string {
+  if (s.fees) {
+    if (s.fees.min === s.fees.max) return formatSAR(s.fees.min);
+    return `${formatSAR(s.fees.min)} - ${formatSAR(s.fees.max)}`;
+  }
+  if (s.startingFee) return `تبدأ من ${formatSAR(s.startingFee)}`;
+  return "غير متوفرة";
+}
+
+/** Curriculum tokens, split for tag display. */
+export function curriculumTokens(s: School): string[] {
+  return (s.curriculum ?? "")
+    .split(/[,،]/)
+    .map((x) => x.trim())
+    .filter(Boolean);
+}
+
+export function gradeLevelTokens(s: School): string[] {
+  return (s.gradeLevels ?? "")
+    .split(/[,،]/)
+    .map((x) => x.trim())
+    .filter(Boolean);
 }

@@ -10,7 +10,7 @@ export default function Header() {
           </span>
           <span className="text-xl font-bold text-slate-900">فصول</span>
           <span className="hidden sm:inline text-xs text-slate-500 mr-1">
-            دليل مدارس الرياض
+            دليل المدارس في السعودية
           </span>
         </Link>
         <nav className="flex items-center gap-1 sm:gap-4 text-sm">
