@@ -51,7 +51,8 @@
       "Bash(curl -s -o /dev/null -w \"HTTP %{http_code} | %{size_download}b\\\\n\" http://localhost:3050/map)",
       "Bash(awk '{print $5}')",
       "Bash(xargs -r -I {} taskkill //F //PID {})",
-      "Bash(git -c user.email=islam.aboughazala@gmail.com -c 'user.name=Islam Aboughazala' commit -m 'Replace fake data with 1,824 real Saudi schools + rich data *)"
+      "Bash(git -c user.email=islam.aboughazala@gmail.com -c 'user.name=Islam Aboughazala' commit -m 'Replace fake data with 1,824 real Saudi schools + rich data *)",
+      "Bash(git -c user.email=islam.aboughazala@gmail.com -c 'user.name=Islam Aboughazala' commit -m 'Fix data quality: per-grade fees, normalized facets, logo layout, social *)"
     ]
   }
 }

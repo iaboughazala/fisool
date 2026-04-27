@@ -4,8 +4,20 @@ import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import Link from "next/link";
-import type { School } from "@/lib/types";
-import { formatFeeRange } from "@/lib/schools";
+import type { FeesSummary } from "@/lib/types";
+
+export interface MapSchool {
+  id: number;
+  slug: string;
+  name: string;
+  city?: string;
+  district?: string;
+  type?: string;
+  lat: number;
+  lng: number;
+  fees?: FeesSummary;
+  startingFee?: number;
+}
 
 const icon = L.divIcon({
   className: "fisool-marker",
@@ -14,8 +26,16 @@ const icon = L.divIcon({
   iconAnchor: [14, 14],
 });
 
-export default function MapView({ schools }: { schools: School[] }) {
-  // Centre of Saudi Arabia, zoomed enough to see most of the country.
+function formatFee(s: MapSchool): string {
+  if (s.fees) {
+    if (s.fees.min === s.fees.max) return `${s.fees.min.toLocaleString("ar-SA")} ر.س`;
+    return `${s.fees.min.toLocaleString("ar-SA")} - ${s.fees.max.toLocaleString("ar-SA")} ر.س`;
+  }
+  if (s.startingFee) return `تبدأ من ${s.startingFee.toLocaleString("ar-SA")} ر.س`;
+  return "غير متوفرة";
+}
+
+export default function MapView({ schools }: { schools: MapSchool[] }) {
   return (
     <MapContainer
       center={[24.5, 45.5]}
@@ -43,7 +63,7 @@ export default function MapView({ schools }: { schools: School[] }) {
                 </div>
               )}
               <div style={{ color: "#0f766e", fontSize: 13, marginBottom: 8 }}>
-                {formatFeeRange(s)}
+                {formatFee(s)}
               </div>
               <Link
                 href={`/schools/${s.slug}`}

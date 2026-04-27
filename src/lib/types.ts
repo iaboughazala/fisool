@@ -9,15 +9,32 @@ export interface FeesSummary {
   girlsMax?: number;
 }
 
+export type FeeStage = "روضة" | "ابتدائي" | "متوسط" | "ثانوي" | "أخرى";
+
+/** A real per-grade × per-track × per-gender fee row from the source DB. */
+export interface GradeFee {
+  /** Source-language track, e.g. "General", "Global American". */
+  track: string;
+  /** Localised track label. */
+  trackAr: string;
+  /** Source-language grade, e.g. "GRADE 1", "KG2". */
+  grade: string;
+  /** Localised grade label, e.g. "الأول الابتدائي". */
+  gradeAr: string;
+  /** Pedagogical stage, used for grouping in UI. */
+  stage: FeeStage;
+  gender: "Boys" | "Girls";
+  genderAr: "بنين" | "بنات";
+  amount: number;
+}
+
 export interface SchoolPhoto {
-  localPath?: string;
   originalUrl: string;
 }
 
 export interface School {
   id: number;
   slug: string;
-  /** Display name — Arabic preferred, falls back to English. */
   name: string;
   nameAr?: string;
   nameEn?: string;
@@ -25,26 +42,24 @@ export interface School {
   cityEn?: string;
   district?: string;
   districtEn?: string;
-  lat: number;
-  lng: number;
-  /** School type, e.g. "أهلية", "عالمية", "حضانة - روضة", "نموذجية". */
+  /** Coordinates may be missing — those schools don't appear on the map. */
+  lat?: number;
+  lng?: number;
   type?: string;
-  /** Comma-separated list of curricula, e.g. "أمريكي, بريطاني". */
   curriculum?: string;
-  /** Gender: "بنين و بنات" | "بنين" | "بنات". */
   gender?: string;
-  /** Comma-separated grade levels, e.g. "جميع المراحل" or "حضانة, روضة, ابتدائى". */
   gradeLevels?: string;
   foundedYear?: number;
   about?: string;
   rating?: number;
   reviewCount?: number;
-  /** Single advertised starting fee (SAR). */
   startingFee?: number;
-  /** Aggregate of all collected fee rows for this school. */
+  /** Aggregate of all collected fee rows. */
   fees?: FeesSummary;
-  /** Primary photo (logo). */
+  /** Full per-grade × per-track × per-gender fee schedule. */
+  gradeFees?: GradeFee[];
   photo?: SchoolPhoto;
-  /** Sub-category ratings, keyed by Arabic category name. */
   subRatings?: Record<string, number>;
+  /** Original source page URL (yaschools.com), shown as attribution. */
+  sourceUrl?: string;
 }

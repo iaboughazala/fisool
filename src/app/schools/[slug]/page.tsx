@@ -10,10 +10,9 @@ import {
   gradeLevelTokens,
   schools,
 } from "@/lib/schools";
+import type { GradeFee, School } from "@/lib/types";
 import SchoolCard from "@/components/SchoolCard";
 
-// We generate the top ~150 schools statically. The rest render on-demand —
-// otherwise building 1,800 pages exhausts the build worker's heap.
 export const dynamicParams = true;
 
 export function generateStaticParams() {
@@ -69,14 +68,14 @@ export default async function SchoolPage({
   const curricula = curriculumTokens(s);
   const grades = gradeLevelTokens(s);
   const hasFees = s.fees || s.startingFee !== undefined;
+  const hasCoords = s.lat !== undefined && s.lng !== undefined;
+  const shareUrl = `https://fisool.finalizat.com/schools/${s.slug}`;
 
   return (
     <article className="max-w-5xl mx-auto px-4 py-8">
       {/* Breadcrumb */}
       <nav className="text-sm text-slate-500 mb-4 flex flex-wrap items-center gap-1">
-        <Link href="/" className="hover:text-teal-700">
-          الرئيسية
-        </Link>
+        <Link href="/" className="hover:text-teal-700">الرئيسية</Link>
         {s.city && (
           <>
             <span>/</span>
@@ -96,52 +95,56 @@ export default async function SchoolPage({
         )}
       </nav>
 
-      {/* Hero with photo */}
-      {s.photo?.originalUrl && (
-        <div className="relative aspect-[16/7] rounded-2xl overflow-hidden mb-6 bg-slate-100">
-          <Image
-            src={s.photo.originalUrl}
-            alt={s.name}
-            fill
-            sizes="(max-width: 1024px) 100vw, 1024px"
-            className="object-cover"
-            priority
-            unoptimized
-          />
-        </div>
-      )}
+      {/* Header card with side logo, NOT a full hero. */}
+      <header className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 mb-6">
+        <div className="flex items-start gap-4 sm:gap-5 mb-4">
+          <div className="relative w-20 h-20 sm:w-28 sm:h-28 shrink-0 rounded-xl overflow-hidden bg-white border border-slate-200 flex items-center justify-center">
+            {s.photo?.originalUrl ? (
+              <Image
+                src={s.photo.originalUrl}
+                alt={s.name}
+                fill
+                sizes="(max-width: 640px) 80px, 112px"
+                className="object-contain p-2"
+                priority
+                unoptimized
+              />
+            ) : (
+              <span className="text-3xl font-bold text-slate-300">
+                {s.name.charAt(0)}
+              </span>
+            )}
+          </div>
 
-      {/* Header */}
-      <header className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 mb-6">
-        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
-          <div className="flex-1">
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mb-2">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-slate-900 leading-tight mb-1">
               {s.name}
             </h1>
             {s.nameEn && s.nameEn !== s.name && (
-              <p className="text-slate-500 mb-2" dir="ltr">
+              <p className="text-slate-500 text-sm mb-1.5" dir="ltr">
                 {s.nameEn}
               </p>
             )}
-            <p className="text-slate-600">
+            <p className="text-slate-600 text-sm">
               {[s.district, s.city].filter(Boolean).join("، ")}
             </p>
-          </div>
-          {s.rating && (
-            <div className="shrink-0 inline-flex flex-col items-center gap-1 bg-amber-50 text-amber-700 px-4 py-3 rounded-xl">
-              <span className="text-2xl font-bold leading-none">
-                ★ {s.rating.toFixed(1)}
-              </span>
-              {s.reviewCount ? (
-                <span className="text-xs text-amber-600">
-                  {s.reviewCount.toLocaleString("ar-SA")} تقييم
+
+            {s.rating !== undefined && s.rating > 0 && (
+              <div className="mt-2.5 inline-flex items-center gap-2 bg-amber-50 text-amber-700 px-3 py-1.5 rounded-lg">
+                <span className="text-lg font-bold leading-none">
+                  ★ {s.rating.toFixed(1)}
                 </span>
-              ) : null}
-            </div>
-          )}
+                {s.reviewCount ? (
+                  <span className="text-xs text-amber-600">
+                    {s.reviewCount.toLocaleString("ar-SA")} تقييم
+                  </span>
+                ) : null}
+              </div>
+            )}
+          </div>
         </div>
 
-        <div className="flex flex-wrap gap-2 mb-6">
+        <div className="flex flex-wrap gap-2 mb-4">
           {s.type && <Pill>{s.type}</Pill>}
           {s.gender && <Pill>{s.gender}</Pill>}
           {curricula.map((c) => (
@@ -150,14 +153,14 @@ export default async function SchoolPage({
         </div>
 
         {grades.length > 0 && (
-          <p className="text-sm text-slate-600 mb-4">
+          <p className="text-sm text-slate-600 mb-3">
             <span className="text-slate-400">المراحل: </span>
             {grades.join("، ")}
           </p>
         )}
 
         {s.about && (
-          <div className="text-slate-700 leading-loose whitespace-pre-line border-t border-slate-100 pt-4">
+          <div className="text-slate-700 leading-loose whitespace-pre-line border-t border-slate-100 pt-4 text-sm sm:text-base">
             {s.about}
           </div>
         )}
@@ -179,10 +182,10 @@ export default async function SchoolPage({
             value={s.reviewCount.toLocaleString("ar-SA")}
           />
         )}
-        {s.fees?.count && (
+        {s.gradeFees && s.gradeFees.length > 0 && (
           <InfoCard
-            label="عدد فئات الرسوم"
-            value={s.fees.count.toLocaleString("ar-SA")}
+            label="فئات الرسوم"
+            value={s.gradeFees.length.toLocaleString("ar-SA")}
           />
         )}
       </div>
@@ -201,68 +204,90 @@ export default async function SchoolPage({
         </section>
       )}
 
-      {/* Fees breakdown */}
-      {s.fees && (
+      {/* Per-grade fee tables, grouped by track */}
+      {s.gradeFees && s.gradeFees.length > 0 && (
         <section className="bg-white rounded-2xl border border-slate-200 p-6 mb-6">
-          <h2 className="font-bold text-lg text-slate-900 mb-4">
-            تفاصيل الرسوم الدراسية
-          </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-            <FeeCell label="أقل رسوم" value={formatSAR(s.fees.min)} />
-            <FeeCell label="أعلى رسوم" value={formatSAR(s.fees.max)} />
-            <FeeCell label="الوسيط" value={formatSAR(s.fees.median)} />
-            <FeeCell label="فئات" value={String(s.fees.count)} />
+          <div className="flex items-baseline justify-between flex-wrap gap-2 mb-4">
+            <h2 className="font-bold text-lg text-slate-900">
+              الرسوم الدراسية لكل صف
+            </h2>
+            <span className="text-xs text-slate-500">
+              المبالغ بالريال السعودي · سنوياً
+            </span>
           </div>
-          {(s.fees.boysMin || s.fees.girlsMin) && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-4 border-t border-slate-100">
-              {s.fees.boysMin !== undefined && s.fees.boysMax !== undefined && (
-                <div className="bg-blue-50 rounded-xl p-4">
-                  <div className="text-sm text-blue-700 mb-1">رسوم البنين</div>
-                  <div className="font-bold text-slate-900">
-                    {s.fees.boysMin === s.fees.boysMax
-                      ? formatSAR(s.fees.boysMin)
-                      : `${formatSAR(s.fees.boysMin)} - ${formatSAR(s.fees.boysMax)}`}
-                  </div>
-                </div>
-              )}
-              {s.fees.girlsMin !== undefined &&
-                s.fees.girlsMax !== undefined && (
-                  <div className="bg-pink-50 rounded-xl p-4">
-                    <div className="text-sm text-pink-700 mb-1">رسوم البنات</div>
-                    <div className="font-bold text-slate-900">
-                      {s.fees.girlsMin === s.fees.girlsMax
-                        ? formatSAR(s.fees.girlsMin)
-                        : `${formatSAR(s.fees.girlsMin)} - ${formatSAR(s.fees.girlsMax)}`}
-                    </div>
-                  </div>
-                )}
-            </div>
-          )}
+          <FeesTables school={s} />
           <p className="text-xs text-slate-500 mt-4 leading-relaxed">
-            * الرسوم تُمثّل النطاق المُعلَن للمدرسة عبر صفوفها المختلفة. يُنصح
-            بالتواصل مع المدرسة لتأكيد الرسوم لصف طفلك.
+            * المصدر: المدرسة. تختلف الرسوم النهائية حسب رسوم التسجيل والكتب
+            والنقل وسنة الالتحاق. يُنصح بالتأكيد مع المدرسة قبل التسجيل.
           </p>
         </section>
       )}
 
-      {/* Map */}
-      <section className="bg-white rounded-2xl border border-slate-200 p-2 mb-6 overflow-hidden">
-        <iframe
-          title={`موقع ${s.name}`}
-          className="w-full h-72 rounded-xl"
-          src={`https://maps.google.com/maps?q=${s.lat},${s.lng}&z=15&output=embed`}
-          loading="lazy"
-        />
-        <div className="text-center pt-3 pb-2">
-          <a
-            href={`https://maps.google.com/?q=${s.lat},${s.lng}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-teal-700 hover:text-teal-900 text-sm font-semibold"
-          >
-            افتح في خرائط Google ←
-          </a>
+      {/* Map (only if coords) */}
+      {hasCoords && (
+        <section className="bg-white rounded-2xl border border-slate-200 p-2 mb-6 overflow-hidden">
+          <iframe
+            title={`موقع ${s.name}`}
+            className="w-full h-72 rounded-xl"
+            src={`https://maps.google.com/maps?q=${s.lat},${s.lng}&z=15&output=embed`}
+            loading="lazy"
+          />
+          <div className="text-center pt-3 pb-2">
+            <a
+              href={`https://maps.google.com/?q=${s.lat},${s.lng}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-teal-700 hover:text-teal-900 text-sm font-semibold"
+            >
+              افتح في خرائط Google ←
+            </a>
+          </div>
+        </section>
+      )}
+
+      {/* Share + source attribution */}
+      <section className="bg-white rounded-2xl border border-slate-200 p-6 mb-6">
+        <h2 className="font-bold text-lg text-slate-900 mb-4">شارك أو تابع</h2>
+        <div className="flex flex-wrap gap-2 mb-4">
+          <ShareButton
+            href={`https://wa.me/?text=${encodeURIComponent(s.name + " — " + shareUrl)}`}
+            color="bg-emerald-600 hover:bg-emerald-700"
+            label="واتساب"
+            icon="📱"
+          />
+          <ShareButton
+            href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(s.name)}&url=${encodeURIComponent(shareUrl)}`}
+            color="bg-sky-500 hover:bg-sky-600"
+            label="تويتر / X"
+            icon="🐦"
+          />
+          <ShareButton
+            href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`}
+            color="bg-blue-700 hover:bg-blue-800"
+            label="فيسبوك"
+            icon="📘"
+          />
+          <ShareButton
+            href={`mailto:?subject=${encodeURIComponent(s.name)}&body=${encodeURIComponent(shareUrl)}`}
+            color="bg-slate-600 hover:bg-slate-700"
+            label="إيميل"
+            icon="✉️"
+          />
         </div>
+        {s.sourceUrl && (
+          <p className="text-xs text-slate-500 pt-3 border-t border-slate-100">
+            بيانات المدرسة من{" "}
+            <a
+              href={s.sourceUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-teal-700 hover:underline"
+            >
+              المصدر الأصلي
+            </a>
+            .
+          </p>
+        )}
       </section>
 
       {/* Similar */}
@@ -281,6 +306,8 @@ export default async function SchoolPage({
     </article>
   );
 }
+
+// ---------- Helpers ----------
 
 function Pill({ children }: { children: React.ReactNode }) {
   return (
@@ -311,17 +338,6 @@ function InfoCard({
   );
 }
 
-function FeeCell({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="bg-slate-50 rounded-xl p-3 text-center">
-      <div className="text-xs text-slate-500 mb-1">{label}</div>
-      <div className="font-bold text-sm text-slate-900 tabular-nums">
-        {value}
-      </div>
-    </div>
-  );
-}
-
 function RatingBar({ label, value }: { label: string; value: number }) {
   const pct = Math.max(0, Math.min(100, (value / 5) * 100));
   return (
@@ -340,4 +356,151 @@ function RatingBar({ label, value }: { label: string; value: number }) {
       </div>
     </div>
   );
+}
+
+function ShareButton({
+  href,
+  color,
+  label,
+  icon,
+}: {
+  href: string;
+  color: string;
+  label: string;
+  icon: string;
+}) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={`${color} text-white text-sm font-semibold rounded-lg px-3 py-2 inline-flex items-center gap-1.5 transition`}
+    >
+      <span>{icon}</span>
+      {label}
+    </a>
+  );
+}
+
+const STAGE_COLORS: Record<string, string> = {
+  روضة: "bg-amber-50 text-amber-800 border-amber-200",
+  ابتدائي: "bg-teal-50 text-teal-800 border-teal-200",
+  متوسط: "bg-blue-50 text-blue-800 border-blue-200",
+  ثانوي: "bg-indigo-50 text-indigo-800 border-indigo-200",
+  أخرى: "bg-slate-50 text-slate-700 border-slate-200",
+};
+
+function FeesTables({ school }: { school: School }) {
+  if (!school.gradeFees || school.gradeFees.length === 0) return null;
+
+  // Group: track → grade → { Boys?, Girls? }
+  type Row = { grade: string; gradeAr: string; stage: string; boys?: number; girls?: number };
+  const byTrack: Record<string, { trackAr: string; rows: Map<string, Row> }> = {};
+
+  for (const f of school.gradeFees) {
+    const tk = byTrack[f.track] ?? { trackAr: f.trackAr, rows: new Map() };
+    byTrack[f.track] = tk;
+    const existing =
+      tk.rows.get(f.grade) ??
+      ({
+        grade: f.grade,
+        gradeAr: f.gradeAr,
+        stage: f.stage,
+      } as Row);
+    if (f.gender === "Boys") existing.boys = f.amount;
+    else existing.girls = f.amount;
+    tk.rows.set(f.grade, existing);
+  }
+
+  // Track display order: General first, then alpha
+  const trackKeys = Object.keys(byTrack).sort((a, b) => {
+    if (a === "General") return -1;
+    if (b === "General") return 1;
+    return a.localeCompare(b);
+  });
+
+  return (
+    <div className="space-y-6">
+      {trackKeys.map((trackKey) => {
+        const { trackAr, rows } = byTrack[trackKey];
+        // Group rows by stage in order: روضة → ابتدائي → متوسط → ثانوي → أخرى
+        const stageOrder = ["روضة", "ابتدائي", "متوسط", "ثانوي", "أخرى"];
+        const allRows = Array.from(rows.values()).sort((a, b) => {
+          const sa = stageOrder.indexOf(a.stage);
+          const sb = stageOrder.indexOf(b.stage);
+          if (sa !== sb) return sa - sb;
+          // Within stage, by grade number
+          return gradeNum(a.grade) - gradeNum(b.grade);
+        });
+
+        const hasBoys = allRows.some((r) => r.boys !== undefined);
+        const hasGirls = allRows.some((r) => r.girls !== undefined);
+
+        // Find stage min/max for the header summary
+        return (
+          <div key={trackKey} className="border border-slate-200 rounded-xl overflow-hidden">
+            <div className="bg-slate-100 px-4 py-2.5 font-bold text-slate-800 text-sm flex items-center justify-between">
+              <span>المسار: {trackAr}</span>
+              <span className="text-xs text-slate-500">
+                {allRows.length} {allRows.length === 1 ? "صف" : "صف"}
+              </span>
+            </div>
+            <table className="w-full text-sm">
+              <thead className="bg-slate-50 text-slate-600 text-xs">
+                <tr>
+                  <th className="px-3 py-2 text-right font-medium">المرحلة</th>
+                  <th className="px-3 py-2 text-right font-medium">الصف</th>
+                  {hasBoys && (
+                    <th className="px-3 py-2 text-left font-medium tabular-nums">
+                      بنين
+                    </th>
+                  )}
+                  {hasGirls && (
+                    <th className="px-3 py-2 text-left font-medium tabular-nums">
+                      بنات
+                    </th>
+                  )}
+                </tr>
+              </thead>
+              <tbody>
+                {allRows.map((r, i) => (
+                  <tr
+                    key={r.grade}
+                    className={i % 2 === 0 ? "bg-white" : "bg-slate-50/50"}
+                  >
+                    <td className="px-3 py-2">
+                      <span
+                        className={`text-xs px-2 py-0.5 rounded-md border ${STAGE_COLORS[r.stage] ?? STAGE_COLORS["أخرى"]}`}
+                      >
+                        {r.stage}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2 text-slate-700">{r.gradeAr}</td>
+                    {hasBoys && (
+                      <td className="px-3 py-2 text-left font-semibold text-slate-900 tabular-nums">
+                        {r.boys !== undefined ? formatSAR(r.boys) : "—"}
+                      </td>
+                    )}
+                    {hasGirls && (
+                      <td className="px-3 py-2 text-left font-semibold text-slate-900 tabular-nums">
+                        {r.girls !== undefined ? formatSAR(r.girls) : "—"}
+                      </td>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function gradeNum(grade: string): number {
+  if (grade === "KG1") return 1;
+  if (grade === "KG2") return 2;
+  if (grade === "KG3") return 3;
+  const m = grade.match(/(\d+)/);
+  return m ? 10 + parseInt(m[1], 10) : 999;
 }

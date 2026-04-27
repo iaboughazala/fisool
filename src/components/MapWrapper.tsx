@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import type { School } from "@/lib/types";
+import type { MapSchool } from "./MapView";
 
 const MapView = dynamic(() => import("./MapView"), {
   ssr: false,
@@ -12,6 +12,6 @@ const MapView = dynamic(() => import("./MapView"), {
   ),
 });
 
-export default function MapWrapper({ schools }: { schools: School[] }) {
+export default function MapWrapper({ schools }: { schools: MapSchool[] }) {
   return <MapView schools={schools} />;
 }
