@@ -61,7 +61,8 @@
       "Bash(curl -s -o /dev/null -w 'stage=ابتدائي: HTTP %{http_code}\\\\n' 'https://fisool.finalizat.com/search?stage=%D8%A7%D8%A8%D8%AA%D8%AF%D8%A7%D8%A6%D9%8A')",
       "Bash(curl -s 'https://fisool.finalizat.com/search')",
       "Bash(PYTHONIOENCODING=utf-8 python scripts/clean-json-junk.py)",
-      "Bash(git -c user.email=islam.aboughazala@gmail.com -c 'user.name=Islam Aboughazala' commit -m 'Strip HTML/CSS junk leaked from upstream sources into text fields *)"
+      "Bash(git -c user.email=islam.aboughazala@gmail.com -c 'user.name=Islam Aboughazala' commit -m 'Strip HTML/CSS junk leaked from upstream sources into text fields *)",
+      "Bash(git -c user.email=islam.aboughazala@gmail.com -c 'user.name=Islam Aboughazala' commit -m 'Audit & normalize facets \\(cities, curriculum, gender, stages\\) *)"
     ]
   }
 }

@@ -58,9 +58,16 @@ export interface SchoolSocialLink {
   url: string;
 }
 
-/** The five canonical Saudi school stages, in order. */
+/**
+ * The four canonical Saudi school stages, in order.
+ *
+ * Note: "حضانة" (nursery, ages 3-4) is technically separate from "روضة"
+ * (KG, ages 4-6) in MOE terminology, but in the source data the two
+ * fields overlap heavily and inconsistently. We collapse them under
+ * "روضة" so the stage filter is parent-friendly: a parent looking for
+ * any pre-school stage hits a single bucket.
+ */
 export const STAGE_NAMES = [
-  "حضانة",
   "روضة",
   "ابتدائي",
   "متوسط",
