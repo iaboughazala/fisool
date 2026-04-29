@@ -172,7 +172,20 @@ export default async function SchoolPage({
           muted={!hasFees}
         />
         {s.foundedYear && (
-          <InfoCard label="سنة التأسيس" value={s.foundedYear.toString()} />
+          <InfoCard
+            label="سنة التأسيس"
+            value={
+              s.foundationDate && /^\d{4}-\d{2}-\d{2}/.test(s.foundationDate)
+                ? s.foundationDate.slice(0, 10)
+                : s.foundedYear.toString()
+            }
+          />
+        )}
+        {s.studentCount !== undefined && s.studentCount > 0 && (
+          <InfoCard
+            label="عدد الطلاب"
+            value={s.studentCount.toLocaleString("ar-SA")}
+          />
         )}
         {s.reviewCount !== undefined && s.reviewCount > 0 && (
           <InfoCard
@@ -187,6 +200,81 @@ export default async function SchoolPage({
           />
         )}
       </div>
+
+      {/* Contact */}
+      {(s.phone || s.mobile || s.whatsapp || s.email || s.website || s.profilePdfUrl || s.address) && (
+        <section className="bg-white rounded-2xl border border-slate-200 p-6 mb-6">
+          <h2 className="font-bold text-lg text-slate-900 mb-4">
+            بيانات الاتصال
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {s.phone && (
+              <ContactRow icon="📞" label="هاتف">
+                <a href={`tel:${s.phone}`} dir="ltr" className="text-teal-700 hover:text-teal-900">
+                  {s.phone}
+                </a>
+              </ContactRow>
+            )}
+            {s.mobile && (
+              <ContactRow icon="📱" label="جوال">
+                <a href={`tel:${s.mobile}`} dir="ltr" className="text-teal-700 hover:text-teal-900">
+                  {s.mobile}
+                </a>
+              </ContactRow>
+            )}
+            {s.whatsapp && (
+              <ContactRow icon="💬" label="واتساب">
+                <a
+                  href={`https://wa.me/${s.whatsapp.replace(/\D/g, "")}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  dir="ltr"
+                  className="text-emerald-700 hover:text-emerald-900"
+                >
+                  {s.whatsapp}
+                </a>
+              </ContactRow>
+            )}
+            {s.email && (
+              <ContactRow icon="✉️" label="البريد الإلكتروني">
+                <a href={`mailto:${s.email}`} dir="ltr" className="text-teal-700 hover:text-teal-900 break-all">
+                  {s.email}
+                </a>
+              </ContactRow>
+            )}
+            {s.website && (
+              <ContactRow icon="🌐" label="الموقع الإلكتروني">
+                <a
+                  href={s.website}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  dir="ltr"
+                  className="text-teal-700 hover:text-teal-900 break-all"
+                >
+                  {s.website}
+                </a>
+              </ContactRow>
+            )}
+            {s.address && (
+              <ContactRow icon="📍" label="العنوان">
+                <span>{s.address}</span>
+              </ContactRow>
+            )}
+            {s.profilePdfUrl && (
+              <ContactRow icon="📄" label="بروفايل المدرسة">
+                <a
+                  href={s.profilePdfUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-teal-700 hover:text-teal-900 font-medium"
+                >
+                  تحميل ملف PDF
+                </a>
+              </ContactRow>
+            )}
+          </div>
+        </section>
+      )}
 
       {/* Sub-ratings */}
       {s.subRatings && Object.keys(s.subRatings).length > 0 && (
@@ -218,6 +306,121 @@ export default async function SchoolPage({
             * المصدر: المدرسة. تختلف الرسوم النهائية حسب رسوم التسجيل والكتب
             والنقل وسنة الالتحاق. يُنصح بالتأكيد مع المدرسة قبل التسجيل.
           </p>
+        </section>
+      )}
+
+      {/* Extra services (admin, transport, uniform, …) */}
+      {s.services && s.services.length > 0 && (
+        <section className="bg-white rounded-2xl border border-slate-200 p-6 mb-6">
+          <h2 className="font-bold text-lg text-slate-900 mb-4">
+            خدمات إضافية ورسوم
+          </h2>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-slate-50 text-slate-600 text-xs">
+                <tr>
+                  <th className="px-3 py-2 text-right font-medium">الخدمة</th>
+                  <th className="px-3 py-2 text-left font-medium tabular-nums">المبلغ</th>
+                  <th className="px-3 py-2 text-center font-medium">اختيارية؟</th>
+                  <th className="px-3 py-2 text-center font-medium">دفعة واحدة؟</th>
+                </tr>
+              </thead>
+              <tbody>
+                {s.services.map((sv, i) => (
+                  <tr
+                    key={`${sv.label ?? "?"}-${i}`}
+                    className={i % 2 === 0 ? "bg-white" : "bg-slate-50/50"}
+                  >
+                    <td className="px-3 py-2 text-slate-700">{sv.label ?? "—"}</td>
+                    <td className="px-3 py-2 text-left font-semibold text-slate-900 tabular-nums">
+                      {sv.amount ? formatSAR(sv.amount) : "—"}
+                    </td>
+                    <td className="px-3 py-2 text-center text-slate-600">
+                      {sv.isOptional ? "نعم" : "لا"}
+                    </td>
+                    <td className="px-3 py-2 text-center text-slate-600">
+                      {sv.oneTime ? "نعم" : "لا"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
+
+      {/* Facilities */}
+      {s.facilities && s.facilities.length > 0 && (
+        <section className="bg-white rounded-2xl border border-slate-200 p-6 mb-6">
+          <h2 className="font-bold text-lg text-slate-900 mb-4">
+            مرافق المدرسة
+          </h2>
+          <div className="flex flex-wrap gap-2">
+            {s.facilities.map((f) => (
+              <span
+                key={f}
+                className="bg-teal-50 text-teal-800 border border-teal-200 px-3 py-1.5 rounded-lg text-sm"
+              >
+                {f}
+              </span>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Discounts */}
+      {s.discounts && s.discounts.length > 0 && (
+        <section className="bg-white rounded-2xl border border-slate-200 p-6 mb-6">
+          <h2 className="font-bold text-lg text-slate-900 mb-4">
+            خصومات
+          </h2>
+          <div className="flex flex-wrap gap-2">
+            {s.discounts.map((d, i) => (
+              <span
+                key={`${d.label ?? "?"}-${i}`}
+                className="bg-emerald-50 text-emerald-800 border border-emerald-200 px-3 py-1.5 rounded-lg text-sm"
+              >
+                {d.label ?? "خصم"}
+                {d.pct !== undefined && d.pct !== null
+                  ? ` — ${d.pct}%`
+                  : d.amount !== undefined && d.amount !== null
+                    ? ` — ${formatSAR(d.amount)}`
+                    : ""}
+              </span>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Photo gallery (multiple photos) */}
+      {s.photos && s.photos.length > 1 && (
+        <section className="bg-white rounded-2xl border border-slate-200 p-6 mb-6">
+          <h2 className="font-bold text-lg text-slate-900 mb-4">
+            صور المدرسة ({s.photos.length})
+          </h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+            {s.photos.slice(0, 24).map((p, i) => {
+              const url = p.originalUrl;
+              if (!url) return null;
+              return (
+                <a
+                  key={`${url}-${i}`}
+                  href={url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block relative aspect-[4/3] rounded-lg overflow-hidden bg-slate-100"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={url}
+                    alt=""
+                    loading="lazy"
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                </a>
+              );
+            })}
+          </div>
         </section>
       )}
 
@@ -272,20 +475,33 @@ export default async function SchoolPage({
             icon="✉️"
           />
         </div>
-        {s.sourceUrl && (
-          <p className="text-xs text-slate-500 pt-3 border-t border-slate-100">
-            بيانات المدرسة من{" "}
-            <a
-              href={s.sourceUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-teal-700 hover:underline"
-            >
-              المصدر الأصلي
-            </a>
-            .
-          </p>
-        )}
+        {(s.sources && s.sources.length > 0) || s.sourceUrl ? (
+          <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center gap-2 text-xs">
+            <span className="text-slate-500">مصادر البيانات:</span>
+            {s.sources?.map((src) => (
+              <span
+                key={src}
+                className="bg-slate-100 text-slate-700 px-2 py-0.5 rounded-md"
+              >
+                {src === "yaschools" ? "yaschools.com"
+                  : src === "madares" ? "parents.madares.sa"
+                  : src === "ssg" ? "saudischoolsguide.com"
+                  : src === "mdaresai" ? "mdares.ai"
+                  : src}
+              </span>
+            ))}
+            {s.sourceUrl && (
+              <a
+                href={s.sourceUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-teal-700 hover:underline mr-auto"
+              >
+                المصدر الأصلي ←
+              </a>
+            )}
+          </div>
+        ) : null}
       </section>
 
       {/* Similar */}
@@ -312,6 +528,26 @@ function Pill({ children }: { children: React.ReactNode }) {
     <span className="bg-slate-100 text-slate-800 px-3 py-1 rounded-full text-sm">
       {children}
     </span>
+  );
+}
+
+function ContactRow({
+  icon,
+  label,
+  children,
+}: {
+  icon: string;
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-start gap-3 text-sm">
+      <span aria-hidden className="mt-0.5">{icon}</span>
+      <div className="min-w-0 flex-1">
+        <div className="text-xs text-slate-500 mb-0.5">{label}</div>
+        <div className="text-slate-800 font-medium">{children}</div>
+      </div>
+    </div>
   );
 }
 
@@ -396,17 +632,20 @@ function FeesTables({ school }: { school: School }) {
   const byTrack: Record<string, { trackAr: string; rows: Map<string, Row> }> = {};
 
   for (const f of school.gradeFees) {
-    const tk = byTrack[f.track] ?? { trackAr: f.trackAr, rows: new Map() };
-    byTrack[f.track] = tk;
+    const trackKey = f.track ?? "General";
+    const trackArLabel = f.trackAr ?? "المسار العام";
+    const tk = byTrack[trackKey] ?? { trackAr: trackArLabel, rows: new Map() };
+    byTrack[trackKey] = tk;
     const existing =
       tk.rows.get(f.grade) ??
       ({
         grade: f.grade,
-        gradeAr: f.gradeAr,
+        gradeAr: f.gradeAr ?? f.grade,
         stage: f.stage,
       } as Row);
     if (f.gender === "Boys") existing.boys = f.amount;
-    else existing.girls = f.amount;
+    else if (f.gender === "Girls") existing.girls = f.amount;
+    else existing.boys = existing.boys ?? f.amount;   // unknown gender → put in boys col
     tk.rows.set(f.grade, existing);
   }
 
