@@ -1,0 +1,276 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1440" font-family="'Segoe UI', 'Tahoma', 'Arial', sans-serif">
+  <defs>
+    <!-- Arrowhead marker -->
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#0d9488"/>
+    </marker>
+    <marker id="arrow-slate" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#64748b"/>
+    </marker>
+
+    <!-- Cylinder gradient for DBs -->
+    <linearGradient id="dbGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0d9488"/>
+      <stop offset="100%" stop-color="#0f766e"/>
+    </linearGradient>
+
+    <!-- Card drop-shadow -->
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.08"/>
+    </filter>
+
+    <!-- Reusable folder icon -->
+    <symbol id="folder" viewBox="0 0 24 24">
+      <path d="M3 6a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" fill="currentColor"/>
+    </symbol>
+    <symbol id="db-icon" viewBox="0 0 24 24">
+      <ellipse cx="12" cy="5" rx="8" ry="3" fill="currentColor"/>
+      <path d="M4 5v14a8 3 0 0 0 16 0V5" fill="currentColor" opacity="0.9"/>
+      <ellipse cx="12" cy="19" rx="8" ry="3" fill="currentColor" opacity="0.7"/>
+    </symbol>
+    <symbol id="code-icon" viewBox="0 0 24 24">
+      <path d="M8 5l-6 7 6 7M16 5l6 7-6 7" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="cloud-icon" viewBox="0 0 24 24">
+      <path d="M17 18a4 4 0 0 0 0-8 6 6 0 0 0-11.2 2.5A4 4 0 0 0 6 18z" fill="currentColor"/>
+    </symbol>
+    <symbol id="git-icon" viewBox="0 0 24 24">
+      <circle cx="6" cy="6" r="2.5" stroke="currentColor" stroke-width="1.8" fill="none"/>
+      <circle cx="18" cy="6" r="2.5" stroke="currentColor" stroke-width="1.8" fill="none"/>
+      <circle cx="12" cy="18" r="2.5" stroke="currentColor" stroke-width="1.8" fill="none"/>
+      <path d="M6 8.5v3a3 3 0 0 0 3 3h3M18 8.5v3a3 3 0 0 1-3 3h-3M12 14.5v1" stroke="currentColor" stroke-width="1.8" fill="none"/>
+    </symbol>
+    <symbol id="globe-icon" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8" fill="none"/>
+      <path d="M3 12h18M12 3a13 13 0 0 1 0 18M12 3a13 13 0 0 0 0 18" stroke="currentColor" stroke-width="1.5" fill="none"/>
+    </symbol>
+  </defs>
+
+  <style>
+    .title       { font-size: 28px; font-weight: 800; fill: #0f172a; }
+    .subtitle    { font-size: 14px; fill: #64748b; }
+    .stage-lbl   { font-size: 13px; font-weight: 700; fill: #0f766e; letter-spacing: 0.5px; }
+    .box-fill    { fill: #ffffff; }
+    .box-stroke  { stroke: #e2e8f0; stroke-width: 1.5; }
+    .primary-fill{ fill: #f0fdfa; }
+    .primary-str { stroke: #14b8a6; stroke-width: 1.5; }
+    .accent-fill { fill: #fffbeb; }
+    .accent-str  { stroke: #f59e0b; stroke-width: 1.5; }
+    .live-fill   { fill: #ecfeff; }
+    .live-str    { stroke: #06b6d4; stroke-width: 2; }
+    .heading     { font-size: 16px; font-weight: 700; fill: #0f172a; }
+    .body        { font-size: 12px; fill: #334155; }
+    .mono        { font-family: 'Consolas', 'Monaco', monospace; font-size: 11px; fill: #475569; }
+    .code-bg     { fill: #f1f5f9; }
+    .white-txt   { fill: #ffffff; }
+    .arabic      { direction: rtl; text-anchor: end; }
+    .flow-line   { stroke: #0d9488; stroke-width: 2; fill: none; }
+    .dashed      { stroke-dasharray: 4 4; }
+
+    @media (prefers-color-scheme: dark) {
+      .title       { fill: #f1f5f9; }
+      .subtitle    { fill: #94a3b8; }
+      .heading     { fill: #f1f5f9; }
+      .body        { fill: #cbd5e1; }
+      .mono        { fill: #94a3b8; }
+      .box-fill    { fill: #1e293b; }
+      .box-stroke  { stroke: #334155; }
+      .primary-fill{ fill: #042f2e; }
+      .accent-fill { fill: #451a03; }
+      .live-fill   { fill: #082f49; }
+      .code-bg     { fill: #0f172a; }
+      .stage-lbl   { fill: #5eead4; }
+    }
+    :root[data-theme="dark"] .title       { fill: #f1f5f9; }
+    :root[data-theme="dark"] .subtitle    { fill: #94a3b8; }
+    :root[data-theme="dark"] .heading     { fill: #f1f5f9; }
+    :root[data-theme="dark"] .body        { fill: #cbd5e1; }
+    :root[data-theme="dark"] .mono        { fill: #94a3b8; }
+    :root[data-theme="dark"] .box-fill    { fill: #1e293b; }
+    :root[data-theme="dark"] .box-stroke  { stroke: #334155; }
+    :root[data-theme="dark"] .primary-fill{ fill: #042f2e; }
+    :root[data-theme="dark"] .accent-fill { fill: #451a03; }
+    :root[data-theme="dark"] .live-fill   { fill: #082f49; }
+    :root[data-theme="dark"] .code-bg     { fill: #0f172a; }
+    :root[data-theme="dark"] .stage-lbl   { fill: #5eead4; }
+    :root[data-theme="light"] .title       { fill: #0f172a; }
+    :root[data-theme="light"] .subtitle    { fill: #64748b; }
+    :root[data-theme="light"] .heading     { fill: #0f172a; }
+    :root[data-theme="light"] .body        { fill: #334155; }
+    :root[data-theme="light"] .mono        { fill: #475569; }
+    :root[data-theme="light"] .box-fill    { fill: #ffffff; }
+    :root[data-theme="light"] .box-stroke  { stroke: #e2e8f0; }
+    :root[data-theme="light"] .primary-fill{ fill: #f0fdfa; }
+    :root[data-theme="light"] .accent-fill { fill: #fffbeb; }
+    :root[data-theme="light"] .live-fill   { fill: #ecfeff; }
+    :root[data-theme="light"] .code-bg     { fill: #f1f5f9; }
+    :root[data-theme="light"] .stage-lbl   { fill: #0f766e; }
+  </style>
+
+  <!-- === TITLE === -->
+  <text x="450" y="45" text-anchor="middle" class="title">Pipeline فصول</text>
+  <text x="450" y="68" text-anchor="middle" class="subtitle">من السكرابر لغاية fisool.finalizat.com — رحلة البيانات كاملة</text>
+
+  <!-- ==========================================================
+       STAGE 1 — SCRAPING (4 sources fan-in)
+       ========================================================== -->
+  <text x="450" y="110" text-anchor="middle" class="stage-lbl">1 · SCRAPING</text>
+  <text x="450" y="128" text-anchor="middle" class="body">أربع سكرابرز Python يجمعوا بيانات من 4 مصادر</text>
+
+  <!-- Source cards row -->
+  <g transform="translate(80, 150)">
+    <!-- Card 1 -->
+    <rect x="0"   y="0" width="170" height="90" rx="12" class="box-fill box-stroke" filter="url(#shadow)"/>
+    <text x="15" y="26" class="heading" font-size="14">yaschools</text>
+    <rect x="15" y="38" width="130" height="20" rx="4" class="code-bg"/>
+    <text x="20" y="53" class="mono">yaschools.db</text>
+    <text x="15" y="76" class="body" font-size="11">1,838 مدرسة · rich data</text>
+
+    <!-- Card 2 -->
+    <rect x="190" y="0" width="170" height="90" rx="12" class="box-fill box-stroke" filter="url(#shadow)"/>
+    <text x="205" y="26" class="heading" font-size="14">parents.madares</text>
+    <rect x="205" y="38" width="130" height="20" rx="4" class="code-bg"/>
+    <text x="210" y="53" class="mono">madares.db</text>
+    <text x="205" y="76" class="body" font-size="11">حي، رسوم لكل صف</text>
+
+    <!-- Card 3 -->
+    <rect x="380" y="0" width="170" height="90" rx="12" class="box-fill box-stroke" filter="url(#shadow)"/>
+    <text x="395" y="26" class="heading" font-size="14">saudischoolsguide</text>
+    <rect x="395" y="38" width="130" height="20" rx="4" class="code-bg"/>
+    <text x="400" y="53" class="mono">ssg.db</text>
+    <text x="395" y="76" class="body" font-size="11">إحداثيات وأسماء</text>
+
+    <!-- Card 4 -->
+    <rect x="570" y="0" width="170" height="90" rx="12" class="box-fill box-stroke" filter="url(#shadow)"/>
+    <text x="585" y="26" class="heading" font-size="14">mdares.ai</text>
+    <rect x="585" y="38" width="130" height="20" rx="4" class="code-bg"/>
+    <text x="590" y="53" class="mono">mdaresai.db</text>
+    <text x="585" y="76" class="body" font-size="11">تليفونات، معرض صور</text>
+  </g>
+
+  <!-- Fan-in lines to unify.py -->
+  <path class="flow-line" d="M 165,240 L 165,270 L 450,270 L 450,310"          marker-end="url(#arrow)"/>
+  <path class="flow-line" d="M 355,240 L 355,270 L 450,270"/>
+  <path class="flow-line" d="M 545,240 L 545,270 L 450,270"/>
+  <path class="flow-line" d="M 735,240 L 735,270 L 450,270"/>
+
+  <!-- ==========================================================
+       STAGE 2 — UNIFY
+       ========================================================== -->
+  <text x="450" y="335" text-anchor="middle" class="stage-lbl">2 · UNIFICATION</text>
+
+  <g transform="translate(240, 350)">
+    <rect x="0" y="0" width="420" height="110" rx="14" class="primary-fill primary-str" filter="url(#shadow)"/>
+    <use xlink:href="#code-icon" x="18" y="20" width="26" height="26" style="color:#0d9488"/>
+    <text x="55" y="35" class="heading">unify.py</text>
+    <text x="55" y="52" class="body" font-size="11">في D:\Projects\web-reading\</text>
+
+    <text x="18" y="80" class="body">دمج بمنطق dedup:</text>
+    <text x="18" y="98" class="body" font-size="11">• GPS distance &lt; 50m</text>
+    <text x="180" y="98" class="body" font-size="11">• name similarity &gt; 80%</text>
+    <text x="325" y="98" class="body" font-size="11">• phone/email</text>
+  </g>
+
+  <path class="flow-line" d="M 450,465 L 450,505" marker-end="url(#arrow)"/>
+
+  <!-- unified.db cylinder -->
+  <g transform="translate(340, 500)">
+    <rect x="0" y="0" width="220" height="70" rx="12" fill="url(#dbGrad)" filter="url(#shadow)"/>
+    <use xlink:href="#db-icon" x="15" y="15" width="26" height="40" style="color:#ffffff" opacity="0.9"/>
+    <text x="55" y="30" class="white-txt heading" font-size="15">data/unified.db</text>
+    <text x="55" y="50" class="white-txt" font-size="11" opacity="0.9">3,377 مدرسة · 37 MB · محلي فقط</text>
+  </g>
+
+  <path class="flow-line" d="M 450,575 L 450,620" marker-end="url(#arrow)"/>
+
+  <!-- ==========================================================
+       STAGE 3 — EXPORT
+       ========================================================== -->
+  <text x="450" y="645" text-anchor="middle" class="stage-lbl">3 · EXPORT TO JSON</text>
+
+  <g transform="translate(240, 660)">
+    <rect x="0" y="0" width="420" height="120" rx="14" class="primary-fill primary-str" filter="url(#shadow)"/>
+    <use xlink:href="#code-icon" x="18" y="20" width="26" height="26" style="color:#0d9488"/>
+    <text x="55" y="35" class="heading">scripts/export-from-unified.py</text>
+    <text x="55" y="52" class="body" font-size="11">SQLite → JSON مسطح جاهز للتطبيق</text>
+
+    <text x="18" y="80" class="body" font-size="11">• Aggregate per-track × per-grade × per-gender fees (30k+ rows)</text>
+    <text x="18" y="98" class="body" font-size="11">• Extract photos, reviews, sub-ratings, social links</text>
+    <text x="18" y="116" class="body" font-size="11">• Translate Track/Grade/Stage tokens to Saudi Arabic</text>
+  </g>
+
+  <path class="flow-line" d="M 450,785 L 450,820" marker-end="url(#arrow)"/>
+
+  <!-- ==========================================================
+       STAGE 4 — CLEAN
+       ========================================================== -->
+  <text x="450" y="845" text-anchor="middle" class="stage-lbl">4 · FACET NORMALIZATION</text>
+
+  <g transform="translate(140, 860)">
+    <rect x="0" y="0" width="620" height="140" rx="14" class="accent-fill accent-str" filter="url(#shadow)"/>
+    <use xlink:href="#code-icon" x="18" y="20" width="26" height="26" style="color:#f59e0b"/>
+    <text x="55" y="35" class="heading">scripts/clean-json-junk.py</text>
+    <text x="55" y="52" class="body" font-size="11">Idempotent — safe to re-run · تنظيف وتوحيد التصنيفات</text>
+
+    <text x="18" y="80" class="body" font-size="11">✓ strip HTML/CSS junk</text>
+    <text x="215" y="80" class="body" font-size="11">✓ whitelist cities (33 مدينة)</text>
+    <text x="425" y="80" class="body" font-size="11">✓ infer city من الإحداثيات</text>
+
+    <text x="18" y="100" class="body" font-size="11">✓ dedupe curriculum (مصرى→مصري, IB, ...)</text>
+    <text x="330" y="100" class="body" font-size="11">✓ merge gender (مشتركة → بنين و بنات)</text>
+
+    <text x="18" y="120" class="body" font-size="11">✓ merge stages (حضانة → روضة, 5→4)</text>
+    <text x="330" y="120" class="body" font-size="11">✓ length caps (city ≤ 40, district ≤ 50)</text>
+  </g>
+
+  <path class="flow-line" d="M 450,1005 L 450,1035" marker-end="url(#arrow)"/>
+
+  <!-- schools-real.json artifact -->
+  <g transform="translate(320, 1030)">
+    <rect x="0" y="0" width="260" height="60" rx="10" class="box-fill box-stroke" filter="url(#shadow)"/>
+    <use xlink:href="#folder" x="12" y="15" width="26" height="26" style="color:#0d9488"/>
+    <text x="47" y="27" class="heading" font-size="13">src/lib/data/schools-real.json</text>
+    <text x="47" y="46" class="body" font-size="11">3,375 مدرسة · 34 MB · مُنقّى</text>
+  </g>
+
+  <path class="flow-line" d="M 450,1095 L 450,1130" marker-end="url(#arrow)"/>
+
+  <!-- ==========================================================
+       STAGE 5 — GIT PUSH
+       ========================================================== -->
+  <text x="450" y="1155" text-anchor="middle" class="stage-lbl">5 · GIT PUSH</text>
+
+  <g transform="translate(260, 1170)">
+    <rect x="0" y="0" width="380" height="70" rx="12" class="box-fill box-stroke" filter="url(#shadow)"/>
+    <use xlink:href="#git-icon" x="15" y="15" width="30" height="30" style="color:#0f172a"/>
+    <text x="55" y="35" class="heading" font-size="14">github.com/iaboughazala/fisool</text>
+    <rect x="55" y="45" width="270" height="18" rx="4" class="code-bg"/>
+    <text x="60" y="58" class="mono">git push origin main</text>
+  </g>
+
+  <path class="flow-line" d="M 450,1245 L 450,1275" marker-end="url(#arrow)"/>
+
+  <!-- ==========================================================
+       STAGE 6 — HOSTINGER
+       ========================================================== -->
+  <text x="450" y="1300" text-anchor="middle" class="stage-lbl">6 · AUTO-DEPLOY (webhook)</text>
+
+  <g transform="translate(180, 1315)">
+    <rect x="0" y="0" width="540" height="70" rx="12" class="primary-fill primary-str" filter="url(#shadow)"/>
+    <use xlink:href="#cloud-icon" x="15" y="18" width="30" height="30" style="color:#0d9488"/>
+    <text x="55" y="30" class="heading">Hostinger — Deploy Web App</text>
+    <rect x="55" y="42" width="470" height="20" rx="4" class="code-bg"/>
+    <text x="60" y="57" class="mono">npm ci  →  npm run build (webpack)  →  restart app  ·  ~3-5 min</text>
+  </g>
+
+  <path class="flow-line" d="M 450,1390 L 450,1410" marker-end="url(#arrow)"/>
+
+  <!-- ==========================================================
+       STAGE 7 — LIVE
+       ========================================================== -->
+  <g transform="translate(280, 1410)">
+    <rect x="0" y="-5" width="340" height="30" rx="8" class="live-fill live-str" filter="url(#shadow)"/>
+    <use xlink:href="#globe-icon" x="12" y="0" width="20" height="20" style="color:#06b6d4"/>
+    <text x="40" y="15" class="heading" font-size="14">https://fisool.finalizat.com</text>
+  </g>
+</svg>
